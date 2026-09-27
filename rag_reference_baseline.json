@@ -1,0 +1,3133 @@
+{
+  "configuration": {
+    "python_version": "3.12.14",
+    "numpy_version": "2.3.5",
+    "chunking": {
+      "max_chunk_chars": 1400,
+      "merge_adjacent_blocks_until_limit": true,
+      "scope": [
+        "knowledge",
+        "playbook",
+        "playbooks"
+      ]
+    },
+    "tokenization": {
+      "normalization": "Unicode NFKD + casefold; remove combining marks",
+      "pattern": "[a-z0-9]+(?:[._+#-][a-z0-9+#-]+)*",
+      "minimum_token_length": 2,
+      "stopwords_count": 118,
+      "stopwords_sha256": "31ceb8575dca0b0079e489035c1350bac99ce22eed5f4778a0df84af0db4e041"
+    },
+    "vocabulary": {
+      "max_vocab": 6000,
+      "term_order": "descending_total_frequency_then_lexical",
+      "idf": "log(1 + (N - df + 0.5) / (df + 0.5))",
+      "tf_idf": "(1 + log(tf)) * idf; L2 normalized"
+    },
+    "ranking": {
+      "lexical": "BM25; normalized by maximum BM25 among allowed results",
+      "bm25_k1": 1.5,
+      "bm25_b": 0.75,
+      "semantic": "LSA projection of normalized TF-IDF; positive cosine",
+      "max_lsa_components": 48,
+      "effective_lsa_components": 48,
+      "lexical_weight": 0.55,
+      "semantic_weight": 0.45,
+      "tie_break": [
+        "source_path",
+        "chunk_number"
+      ]
+    },
+    "ranking_k": [
+      1,
+      3,
+      5,
+      10
+    ],
+    "filters": {
+      "supported": [
+        "document_type",
+        "topic"
+      ],
+      "per_case": {
+        "audit-unit-paraphrase": {
+          "document_type": "knowledge",
+          "topic": "eda"
+        },
+        "audit-missing-exact": {
+          "topic": "eda"
+        },
+        "cleaning-missing-paraphrase": {
+          "topic": "preprocessing"
+        },
+        "problem-unit-exact": {
+          "topic": "problem_definition"
+        },
+        "features-time-paraphrase": {
+          "topic": "feature_engineering"
+        },
+        "validation-kfold-direct": {
+          "topic": "validation"
+        },
+        "validation-groupkfold-exact": {
+          "topic": "validation"
+        },
+        "leakage-future-paraphrase": {
+          "document_type": "knowledge",
+          "topic": "preprocessing"
+        },
+        "leakage-signals-exact-filtered": {
+          "document_type": "knowledge",
+          "topic": "preprocessing"
+        },
+        "classification-confusion-paraphrase": {
+          "topic": "metrics"
+        },
+        "classification-f1-exact": {
+          "topic": "metrics"
+        },
+        "regression-mae-exact": {
+          "topic": "metrics"
+        },
+        "models-logistic-direct": {
+          "topic": "models"
+        },
+        "ensembles-boosting-exact": {
+          "topic": "ensembles"
+        },
+        "tuning-random-search-paraphrase": {
+          "topic": "tuning"
+        },
+        "workflow-evaluation-filtered": {
+          "document_type": "knowledge",
+          "topic": "workflows"
+        },
+        "playbook-baseline-direct": {
+          "document_type": "playbook"
+        },
+        "playbook-classification-imbalance": {
+          "document_type": "playbook"
+        },
+        "playbook-regression-residuals": {
+          "document_type": "playbook"
+        },
+        "negative-impossible-topic": {
+          "document_type": "knowledge",
+          "topic": "topic_inexistente"
+        },
+        "negative-playbook-topic-filter": {
+          "document_type": "playbook",
+          "topic": "workflows"
+        }
+      }
+    },
+    "diversity": {
+      "per_section_limit": 2,
+      "deduplicate_exact": false,
+      "section_key": [
+        "source_path",
+        "section_path"
+      ]
+    },
+    "queries_sha256": "e0642f27ccfdd9e462f4cabb02f9a07d998b2c1dbdf8e589e530dbd57df022b1",
+    "corpus_manifest_sha256": "c2e32ec1e9a49227aafbc620063f8d61b3efa9b3545dcc077ead0d326d5452d1",
+    "corpus_manifest_files": 19,
+    "indexed_documents": 15,
+    "corpus_files": {
+      "knowledge/eda/dataset_audit.md": "863f0281a1e807ce230fe6ff6c7ee35d6da0e3d6403937717f196d1a09a6377d",
+      "knowledge/ensembles/boosting_models.md": "68643b6c73caf1af33e421676e2e49029d6d99f102fa8709983ec8c6a81a2361",
+      "knowledge/feature_engineering/feature_engineering.md": "45d2a8933e60982c1d1ff8da8340476668e67f068bd38b5c9861fa6678efc8fa",
+      "knowledge/metrics/classification_metrics.md": "30894999f3405fd77e09091c9d51f9a1c3d28cf34764f01307cae0d2fa2ace93",
+      "knowledge/metrics/regression_metrics.md": "c4d81ecb5698bfb749df274f2fdda27b8ddb12bcdd18e09977ef3714b973a134",
+      "knowledge/models/tabular_models.md": "4cf7ac8e81b452e2c06cbde7f2252139dcc8b286fae314f934cb56f97558e23e",
+      "knowledge/preprocessing/data_cleaning.md": "9cf37b5e355f827acb5e3420f3d61b63fd92ce71eae220d0532094ba15121d47",
+      "knowledge/preprocessing/data_leakage.md": "e5a5abb7e4a8baf0e20c13d7d9fad821906f2bbd47756d7ea759c798265a2776",
+      "knowledge/problem_definition/problem_formulation.md": "311c6566730ffaa04e68120a0831f31fbdab2a1ac00d147d8bbbdae823676a9f",
+      "knowledge/tuning/hyperparameter_tuning.md": "9edd7f920000990ad3d043a2c2f023681c5e1c3e026ae4c179fc0f9b68f67764",
+      "knowledge/validation/validation_strategy.md": "bd031d05402500077a18f76bec7c829e48b471afd79b1760081981aedc0868a0",
+      "knowledge/workflows/competition_workflow.md": "6e94ce7cc750f87350a426f95abb036b6dc9d91ec2e2fa6e20ace625a1e35f5e",
+      "playbook/classification.md": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "playbook/competition_workflow.md": "41a8f55d583d4448aab929905c1033abee5bbbca6ca254d38cb0fb59d3d7c159",
+      "playbook/ml_workflow.md": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "playbook/regression.md": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "playbook/tabular_classification.md": "f3849a943bd5839d732ec628a0ef3d8856b497a9ba57d000c1b7fae96ef5d35b",
+      "playbook/tabular_regression.md": "7897e92848d3dc56e11ee3e90fd5dab1eb346eca24c1148667656339c89947ff",
+      "playbook/time_series.md": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "relevance_definition": "Positive hit iff one returned chunk has exact expected_path, expected_section as substring of section_path, and all expected_terms in the same chunk (case-insensitive). Negative cases expect zero results and are excluded from ranking metrics."
+  },
+  "index_documents": 15,
+  "index_chunks": 530,
+  "ranking_k": [
+    1,
+    3,
+    5,
+    10
+  ],
+  "ranking_metrics": {
+    "positive_cases": 19,
+    "recall_at_k": {
+      "1": 0.7368421052631579,
+      "3": 0.8421052631578947,
+      "5": 0.9473684210526315,
+      "10": 0.9473684210526315
+    },
+    "mrr": 0.8070175438596492
+  },
+  "negative_metrics": {
+    "negative_cases": 2,
+    "zero_results_expected": 2,
+    "zero_results_accuracy": 1.0,
+    "returned_zero_results": 2
+  },
+  "diversity_metrics": {
+    "1": {
+      "positive_cases": 19,
+      "mean_distinct_sections": 1.0,
+      "repeated_fragments": 0
+    },
+    "3": {
+      "positive_cases": 19,
+      "mean_distinct_sections": 3.0,
+      "repeated_fragments": 0
+    },
+    "5": {
+      "positive_cases": 19,
+      "mean_distinct_sections": 4.842105263157895,
+      "repeated_fragments": 3
+    },
+    "10": {
+      "positive_cases": 19,
+      "mean_distinct_sections": 9.263157894736842,
+      "repeated_fragments": 14
+    }
+  },
+  "passed": 20,
+  "total": 21,
+  "cases": [
+    {
+      "id": "audit-unit-paraphrase",
+      "query": "¿Qué significa cada fila del dataset y cómo influye que una entidad aparezca varias veces?",
+      "positive": true,
+      "expected_zero_results": false,
+      "expected_path": "knowledge/eda/dataset_audit.md",
+      "expected_section": "3.1 Dimensiones y unidad de observación",
+      "expected_terms": [
+        "fila",
+        "entidad"
+      ],
+      "filters": {
+        "document_type": "knowledge",
+        "topic": "eda"
+      },
+      "correct": true,
+      "retrieved_zero_results": false,
+      "zero_results_match_expected": true,
+      "relevant_ranks": [
+        1
+      ],
+      "first_relevant_rank": 1,
+      "reciprocal_rank": 1.0,
+      "recall_at_k": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "observations": "Fragmento relevante en posición 1 de 10.",
+      "diversity_at_k": {
+        "1": {
+          "distinct_sections": 1,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "3": {
+          "distinct_sections": 3,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "5": {
+          "distinct_sections": 5,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "10": {
+          "distinct_sections": 9,
+          "repeated_fragments": 1,
+          "repeated_sections": [
+            {
+              "path": "knowledge/eda/dataset_audit.md",
+              "section_path": "Auditoría de datasets para Machine Learning\n6. Riesgos de partición, tiempo y grupos",
+              "count": 2
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "rank": 1,
+          "chunk_id": "b2ee27470b37bc392cdc",
+          "path": "knowledge/eda/dataset_audit.md",
+          "section": "Auditoría de datasets para Machine Learning\n3. Inspección inicial del dataset\n3.1 Dimensiones y unidad de observación",
+          "score": 0.867001,
+          "location": "knowledge/eda/dataset_audit.md#31-dimensiones-y-unidad-de-observacion",
+          "relevant": true
+        },
+        {
+          "rank": 2,
+          "chunk_id": "478d1ec849db6cb43b4f",
+          "path": "knowledge/eda/dataset_audit.md",
+          "section": "Auditoría de datasets para Machine Learning\n3. Inspección inicial del dataset\n3.4 Variable objetivo",
+          "score": 0.57664,
+          "location": "knowledge/eda/dataset_audit.md#34-variable-objetivo",
+          "relevant": false
+        },
+        {
+          "rank": 3,
+          "chunk_id": "14a1a86c72ef0fe00c44",
+          "path": "knowledge/eda/dataset_audit.md",
+          "section": "Auditoría de datasets para Machine Learning\n2. Qué debe responder una auditoría",
+          "score": 0.504568,
+          "location": "knowledge/eda/dataset_audit.md#2-que-debe-responder-una-auditoria",
+          "relevant": false
+        },
+        {
+          "rank": 4,
+          "chunk_id": "0c21cbd6ae5a363e91af",
+          "path": "knowledge/eda/dataset_audit.md",
+          "section": "Auditoría de datasets para Machine Learning\n4. Calidad y consistencia de los datos\n4.2 Filas duplicadas y claves repetidas",
+          "score": 0.480767,
+          "location": "knowledge/eda/dataset_audit.md#42-filas-duplicadas-y-claves-repetidas",
+          "relevant": false
+        },
+        {
+          "rank": 5,
+          "chunk_id": "e78e82a11785a5a19464",
+          "path": "knowledge/eda/dataset_audit.md",
+          "section": "Auditoría de datasets para Machine Learning\n6. Riesgos de partición, tiempo y grupos",
+          "score": 0.389732,
+          "location": "knowledge/eda/dataset_audit.md#6-riesgos-de-particion-tiempo-y-grupos",
+          "relevant": false
+        },
+        {
+          "rank": 6,
+          "chunk_id": "b1f46b836dbc845593e1",
+          "path": "knowledge/eda/dataset_audit.md",
+          "section": "Auditoría de datasets para Machine Learning\n10. Reglas de decisión",
+          "score": 0.330365,
+          "location": "knowledge/eda/dataset_audit.md#10-reglas-de-decision",
+          "relevant": false
+        },
+        {
+          "rank": 7,
+          "chunk_id": "513cd759adfb2c3c638f",
+          "path": "knowledge/eda/dataset_audit.md",
+          "section": "Auditoría de datasets para Machine Learning\n12. Aplicación en un coding test o datathon",
+          "score": 0.325347,
+          "location": "knowledge/eda/dataset_audit.md#12-aplicacion-en-un-coding-test-o-datathon",
+          "relevant": false
+        },
+        {
+          "rank": 8,
+          "chunk_id": "e0d324e37120bd88b352",
+          "path": "knowledge/eda/dataset_audit.md",
+          "section": "Auditoría de datasets para Machine Learning\n8. Procedimiento de auditoría paso a paso",
+          "score": 0.316632,
+          "location": "knowledge/eda/dataset_audit.md#8-procedimiento-de-auditoria-paso-a-paso",
+          "relevant": false
+        },
+        {
+          "rank": 9,
+          "chunk_id": "be4921f58cf3850094e6",
+          "path": "knowledge/eda/dataset_audit.md",
+          "section": "Auditoría de datasets para Machine Learning\n6. Riesgos de partición, tiempo y grupos",
+          "score": 0.273263,
+          "location": "knowledge/eda/dataset_audit.md#6-riesgos-de-particion-tiempo-y-grupos",
+          "relevant": false
+        },
+        {
+          "rank": 10,
+          "chunk_id": "ffa990b7704d19089f45",
+          "path": "knowledge/eda/dataset_audit.md",
+          "section": "Auditoría de datasets para Machine Learning\n4. Calidad y consistencia de los datos\n4.4 Valores fuera de rango y posibles anomalías",
+          "score": 0.260577,
+          "location": "knowledge/eda/dataset_audit.md#44-valores-fuera-de-rango-y-posibles-anomalias",
+          "relevant": false
+        }
+      ]
+    },
+    {
+      "id": "audit-missing-exact",
+      "query": "NaN, centinelas e infinitos al inspeccionar ausencias",
+      "positive": true,
+      "expected_zero_results": false,
+      "expected_path": "knowledge/eda/dataset_audit.md",
+      "expected_section": "4.1 Valores faltantes",
+      "expected_terms": [
+        "NaN",
+        "centinelas"
+      ],
+      "filters": {
+        "topic": "eda"
+      },
+      "correct": true,
+      "retrieved_zero_results": false,
+      "zero_results_match_expected": true,
+      "relevant_ranks": [
+        1
+      ],
+      "first_relevant_rank": 1,
+      "reciprocal_rank": 1.0,
+      "recall_at_k": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "observations": "Fragmento relevante en posición 1 de 10.",
+      "diversity_at_k": {
+        "1": {
+          "distinct_sections": 1,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "3": {
+          "distinct_sections": 3,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "5": {
+          "distinct_sections": 5,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "10": {
+          "distinct_sections": 10,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        }
+      },
+      "results": [
+        {
+          "rank": 1,
+          "chunk_id": "f81283905cc79db5a033",
+          "path": "knowledge/eda/dataset_audit.md",
+          "section": "Auditoría de datasets para Machine Learning\n4. Calidad y consistencia de los datos\n4.1 Valores faltantes",
+          "score": 0.852445,
+          "location": "knowledge/eda/dataset_audit.md#41-valores-faltantes",
+          "relevant": true
+        },
+        {
+          "rank": 2,
+          "chunk_id": "b1f46b836dbc845593e1",
+          "path": "knowledge/eda/dataset_audit.md",
+          "section": "Auditoría de datasets para Machine Learning\n10. Reglas de decisión",
+          "score": 0.514282,
+          "location": "knowledge/eda/dataset_audit.md#10-reglas-de-decision",
+          "relevant": false
+        },
+        {
+          "rank": 3,
+          "chunk_id": "14a1a86c72ef0fe00c44",
+          "path": "knowledge/eda/dataset_audit.md",
+          "section": "Auditoría de datasets para Machine Learning\n2. Qué debe responder una auditoría",
+          "score": 0.484071,
+          "location": "knowledge/eda/dataset_audit.md#2-que-debe-responder-una-auditoria",
+          "relevant": false
+        },
+        {
+          "rank": 4,
+          "chunk_id": "1db9d8fee479a30cb3f9",
+          "path": "knowledge/eda/dataset_audit.md",
+          "section": "Auditoría de datasets para Machine Learning\n13. Checklist operativo",
+          "score": 0.468087,
+          "location": "knowledge/eda/dataset_audit.md#13-checklist-operativo",
+          "relevant": false
+        },
+        {
+          "rank": 5,
+          "chunk_id": "8267c73a33887eafa147",
+          "path": "knowledge/eda/dataset_audit.md",
+          "section": "Auditoría de datasets para Machine Learning\n8. Procedimiento de auditoría paso a paso",
+          "score": 0.462878,
+          "location": "knowledge/eda/dataset_audit.md#8-procedimiento-de-auditoria-paso-a-paso",
+          "relevant": false
+        },
+        {
+          "rank": 6,
+          "chunk_id": "b2ee27470b37bc392cdc",
+          "path": "knowledge/eda/dataset_audit.md",
+          "section": "Auditoría de datasets para Machine Learning\n3. Inspección inicial del dataset\n3.1 Dimensiones y unidad de observación",
+          "score": 0.411382,
+          "location": "knowledge/eda/dataset_audit.md#31-dimensiones-y-unidad-de-observacion",
+          "relevant": false
+        },
+        {
+          "rank": 7,
+          "chunk_id": "b4f551ac4a455acb59a4",
+          "path": "knowledge/eda/dataset_audit.md",
+          "section": "Auditoría de datasets para Machine Learning\n1. Propósito y alcance",
+          "score": 0.330453,
+          "location": "knowledge/eda/dataset_audit.md#1-proposito-y-alcance",
+          "relevant": false
+        },
+        {
+          "rank": 8,
+          "chunk_id": "513cd759adfb2c3c638f",
+          "path": "knowledge/eda/dataset_audit.md",
+          "section": "Auditoría de datasets para Machine Learning\n12. Aplicación en un coding test o datathon",
+          "score": 0.318843,
+          "location": "knowledge/eda/dataset_audit.md#12-aplicacion-en-un-coding-test-o-datathon",
+          "relevant": false
+        },
+        {
+          "rank": 9,
+          "chunk_id": "0c21cbd6ae5a363e91af",
+          "path": "knowledge/eda/dataset_audit.md",
+          "section": "Auditoría de datasets para Machine Learning\n4. Calidad y consistencia de los datos\n4.2 Filas duplicadas y claves repetidas",
+          "score": 0.316661,
+          "location": "knowledge/eda/dataset_audit.md#42-filas-duplicadas-y-claves-repetidas",
+          "relevant": false
+        },
+        {
+          "rank": 10,
+          "chunk_id": "8328ca9c786f07f232f3",
+          "path": "knowledge/eda/dataset_audit.md",
+          "section": "Auditoría de datasets para Machine Learning\n9. Implementación mínima en Python",
+          "score": 0.312378,
+          "location": "knowledge/eda/dataset_audit.md#9-implementacion-minima-en-python",
+          "relevant": false
+        }
+      ]
+    },
+    {
+      "id": "cleaning-missing-paraphrase",
+      "query": "¿Cómo identificar valores incompletos y qué alternativas como eliminar o interpolar existen?",
+      "positive": true,
+      "expected_zero_results": false,
+      "expected_path": "knowledge/preprocessing/data_cleaning.md",
+      "expected_section": "4.1 Valores faltantes",
+      "expected_terms": [
+        "eliminación",
+        "interpolación"
+      ],
+      "filters": {
+        "topic": "preprocessing"
+      },
+      "correct": false,
+      "retrieved_zero_results": false,
+      "zero_results_match_expected": true,
+      "relevant_ranks": [],
+      "first_relevant_rank": null,
+      "reciprocal_rank": 0.0,
+      "recall_at_k": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "observations": "No apareció un fragmento que cumpla en conjunto ruta, sección y términos requeridos.",
+      "diversity_at_k": {
+        "1": {
+          "distinct_sections": 1,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "3": {
+          "distinct_sections": 3,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "5": {
+          "distinct_sections": 5,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "10": {
+          "distinct_sections": 10,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        }
+      },
+      "results": [
+        {
+          "rank": 1,
+          "chunk_id": "c183587c1dfa47e6e131",
+          "path": "knowledge/preprocessing/data_cleaning.md",
+          "section": "Limpieza de datos para Machine Learning\n2. Principios para limpiar datos",
+          "score": 0.765461,
+          "location": "knowledge/preprocessing/data_cleaning.md#2-principios-para-limpiar-datos",
+          "relevant": false
+        },
+        {
+          "rank": 2,
+          "chunk_id": "22aac894c88f789302fe",
+          "path": "knowledge/preprocessing/data_cleaning.md",
+          "section": "Limpieza de datos para Machine Learning\n4. Tipos de problemas y tratamiento\n4.2 Duplicados",
+          "score": 0.665008,
+          "location": "knowledge/preprocessing/data_cleaning.md#42-duplicados",
+          "relevant": false
+        },
+        {
+          "rank": 3,
+          "chunk_id": "0b8f8e39b6cf5be873c9",
+          "path": "knowledge/preprocessing/data_cleaning.md",
+          "section": "Limpieza de datos para Machine Learning\n9. Errores frecuentes y riesgos",
+          "score": 0.661497,
+          "location": "knowledge/preprocessing/data_cleaning.md#9-errores-frecuentes-y-riesgos",
+          "relevant": false
+        },
+        {
+          "rank": 4,
+          "chunk_id": "6de42a666c74d780974d",
+          "path": "knowledge/preprocessing/data_cleaning.md",
+          "section": "Limpieza de datos para Machine Learning\n4. Tipos de problemas y tratamiento\n4.1 Valores faltantes",
+          "score": 0.654833,
+          "location": "knowledge/preprocessing/data_cleaning.md#41-valores-faltantes",
+          "relevant": false
+        },
+        {
+          "rank": 5,
+          "chunk_id": "a84f45a574f932439ff4",
+          "path": "knowledge/preprocessing/data_cleaning.md",
+          "section": "Limpieza de datos para Machine Learning\n13. Vacíos y limitaciones de las fuentes",
+          "score": 0.572595,
+          "location": "knowledge/preprocessing/data_cleaning.md#13-vacios-y-limitaciones-de-las-fuentes",
+          "relevant": false
+        },
+        {
+          "rank": 6,
+          "chunk_id": "a4ae28b5e988737ba9c0",
+          "path": "knowledge/preprocessing/data_leakage.md",
+          "section": "Detección y prevención de data leakage\n10. Checklist operativo",
+          "score": 0.570304,
+          "location": "knowledge/preprocessing/data_leakage.md#10-checklist-operativo",
+          "relevant": false
+        },
+        {
+          "rank": 7,
+          "chunk_id": "48701e610767fff601bb",
+          "path": "knowledge/preprocessing/data_cleaning.md",
+          "section": "Limpieza de datos para Machine Learning\n10. Aplicación en un coding test o datathon",
+          "score": 0.518749,
+          "location": "knowledge/preprocessing/data_cleaning.md#10-aplicacion-en-un-coding-test-o-datathon",
+          "relevant": false
+        },
+        {
+          "rank": 8,
+          "chunk_id": "31df3b3c455b780e454c",
+          "path": "knowledge/preprocessing/data_cleaning.md",
+          "section": "Limpieza de datos para Machine Learning\n4. Tipos de problemas y tratamiento\n4.4 Variables categóricas",
+          "score": 0.456266,
+          "location": "knowledge/preprocessing/data_cleaning.md#44-variables-categoricas",
+          "relevant": false
+        },
+        {
+          "rank": 9,
+          "chunk_id": "9e89f15fbd3f25a472b9",
+          "path": "knowledge/preprocessing/data_cleaning.md",
+          "section": "Limpieza de datos para Machine Learning\n4. Tipos de problemas y tratamiento\n4.6 Valores atípicos o fuera de rango",
+          "score": 0.420656,
+          "location": "knowledge/preprocessing/data_cleaning.md#46-valores-atipicos-o-fuera-de-rango",
+          "relevant": false
+        },
+        {
+          "rank": 10,
+          "chunk_id": "16cb5f214fa447a470cb",
+          "path": "knowledge/preprocessing/data_leakage.md",
+          "section": "Detección y prevención de data leakage\n6. Reglas de decisión",
+          "score": 0.382509,
+          "location": "knowledge/preprocessing/data_leakage.md#6-reglas-de-decision",
+          "relevant": false
+        }
+      ]
+    },
+    {
+      "id": "problem-unit-exact",
+      "query": "unidad de análisis: entidad, evento o intervalo representado por una observación",
+      "positive": true,
+      "expected_zero_results": false,
+      "expected_path": "knowledge/problem_definition/problem_formulation.md",
+      "expected_section": "4.2 Unidad de análisis",
+      "expected_terms": [
+        "entidad",
+        "target"
+      ],
+      "filters": {
+        "topic": "problem_definition"
+      },
+      "correct": true,
+      "retrieved_zero_results": false,
+      "zero_results_match_expected": true,
+      "relevant_ranks": [
+        1
+      ],
+      "first_relevant_rank": 1,
+      "reciprocal_rank": 1.0,
+      "recall_at_k": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "observations": "Fragmento relevante en posición 1 de 10.",
+      "diversity_at_k": {
+        "1": {
+          "distinct_sections": 1,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "3": {
+          "distinct_sections": 3,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "5": {
+          "distinct_sections": 5,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "10": {
+          "distinct_sections": 10,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        }
+      },
+      "results": [
+        {
+          "rank": 1,
+          "chunk_id": "1855e42226c030fae399",
+          "path": "knowledge/problem_definition/problem_formulation.md",
+          "section": "Formulación del problema de Machine Learning\n4. Componentes del problema\n4.2 Unidad de análisis",
+          "score": 0.922387,
+          "location": "knowledge/problem_definition/problem_formulation.md#42-unidad-de-analisis",
+          "relevant": true
+        },
+        {
+          "rank": 2,
+          "chunk_id": "4dc38ced9cec07819a31",
+          "path": "knowledge/problem_definition/problem_formulation.md",
+          "section": "Formulación del problema de Machine Learning\n7. Formulación del objetivo y de la variable objetivo",
+          "score": 0.484704,
+          "location": "knowledge/problem_definition/problem_formulation.md#7-formulacion-del-objetivo-y-de-la-variable-objetivo",
+          "relevant": false
+        },
+        {
+          "rank": 3,
+          "chunk_id": "94a49a32be60ddd6a17b",
+          "path": "knowledge/problem_definition/problem_formulation.md",
+          "section": "Formulación del problema de Machine Learning\n2. Preguntas que debe responder la formulación",
+          "score": 0.443888,
+          "location": "knowledge/problem_definition/problem_formulation.md#2-preguntas-que-debe-responder-la-formulacion",
+          "relevant": false
+        },
+        {
+          "rank": 4,
+          "chunk_id": "74966a7dbeb161452dad",
+          "path": "knowledge/problem_definition/problem_formulation.md",
+          "section": "Formulación del problema de Machine Learning\n4. Componentes del problema\n4.5 Momento de predicción",
+          "score": 0.357024,
+          "location": "knowledge/problem_definition/problem_formulation.md#45-momento-de-prediccion",
+          "relevant": false
+        },
+        {
+          "rank": 5,
+          "chunk_id": "ad75818b985efded7ee6",
+          "path": "knowledge/problem_definition/problem_formulation.md",
+          "section": "Formulación del problema de Machine Learning\n6. Flujo para formular un problema de Machine Learning",
+          "score": 0.354382,
+          "location": "knowledge/problem_definition/problem_formulation.md#6-flujo-para-formular-un-problema-de-machine-learning",
+          "relevant": false
+        },
+        {
+          "rank": 6,
+          "chunk_id": "40622f782d988a9af024",
+          "path": "knowledge/problem_definition/problem_formulation.md",
+          "section": "Formulación del problema de Machine Learning\n14. Errores frecuentes y riesgos",
+          "score": 0.287671,
+          "location": "knowledge/problem_definition/problem_formulation.md#14-errores-frecuentes-y-riesgos",
+          "relevant": false
+        },
+        {
+          "rank": 7,
+          "chunk_id": "c792c3788d40ec2bddc4",
+          "path": "knowledge/problem_definition/problem_formulation.md",
+          "section": "Formulación del problema de Machine Learning\n1. Propósito",
+          "score": 0.25679,
+          "location": "knowledge/problem_definition/problem_formulation.md#1-proposito",
+          "relevant": false
+        },
+        {
+          "rank": 8,
+          "chunk_id": "af15ffddea68afebdcde",
+          "path": "knowledge/problem_definition/problem_formulation.md",
+          "section": "Formulación del problema de Machine Learning\n16. Checklist operativo",
+          "score": 0.254936,
+          "location": "knowledge/problem_definition/problem_formulation.md#16-checklist-operativo",
+          "relevant": false
+        },
+        {
+          "rank": 9,
+          "chunk_id": "11462ad676cdde8eac23",
+          "path": "knowledge/problem_definition/problem_formulation.md",
+          "section": "Formulación del problema de Machine Learning\n15. Aplicación en un coding test o datathon",
+          "score": 0.252229,
+          "location": "knowledge/problem_definition/problem_formulation.md#15-aplicacion-en-un-coding-test-o-datathon",
+          "relevant": false
+        },
+        {
+          "rank": 10,
+          "chunk_id": "89a011d9f3a761cd62fa",
+          "path": "knowledge/problem_definition/problem_formulation.md",
+          "section": "Formulación del problema de Machine Learning\n5. Selección del tipo de problema",
+          "score": 0.227445,
+          "location": "knowledge/problem_definition/problem_formulation.md#5-seleccion-del-tipo-de-problema",
+          "relevant": false
+        }
+      ]
+    },
+    {
+      "id": "features-time-paraphrase",
+      "query": "Derivar señales del calendario para aprender patrones recurrentes en registros con fecha",
+      "positive": true,
+      "expected_zero_results": false,
+      "expected_path": "knowledge/feature_engineering/feature_engineering.md",
+      "expected_section": "4.3 Variables temporales",
+      "expected_terms": [
+        "timestamp",
+        "día de semana"
+      ],
+      "filters": {
+        "topic": "feature_engineering"
+      },
+      "correct": true,
+      "retrieved_zero_results": false,
+      "zero_results_match_expected": true,
+      "relevant_ranks": [
+        1
+      ],
+      "first_relevant_rank": 1,
+      "reciprocal_rank": 1.0,
+      "recall_at_k": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "observations": "Fragmento relevante en posición 1 de 10.",
+      "diversity_at_k": {
+        "1": {
+          "distinct_sections": 1,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "3": {
+          "distinct_sections": 3,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "5": {
+          "distinct_sections": 5,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "10": {
+          "distinct_sections": 10,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        }
+      },
+      "results": [
+        {
+          "rank": 1,
+          "chunk_id": "1d1bf9b89cff3862f20c",
+          "path": "knowledge/feature_engineering/feature_engineering.md",
+          "section": "Feature engineering para Machine Learning\n4. Familias de transformaciones\n4.3 Variables temporales",
+          "score": 0.80992,
+          "location": "knowledge/feature_engineering/feature_engineering.md#43-variables-temporales",
+          "relevant": true
+        },
+        {
+          "rank": 2,
+          "chunk_id": "1932775b432cc3130c07",
+          "path": "knowledge/feature_engineering/feature_engineering.md",
+          "section": "Feature engineering para Machine Learning\n1. Propósito y alcance",
+          "score": 0.607961,
+          "location": "knowledge/feature_engineering/feature_engineering.md#1-proposito-y-alcance",
+          "relevant": false
+        },
+        {
+          "rank": 3,
+          "chunk_id": "509f1799999e7deb1b9c",
+          "path": "knowledge/feature_engineering/feature_engineering.md",
+          "section": "Feature engineering para Machine Learning\n4. Familias de transformaciones",
+          "score": 0.551051,
+          "location": "knowledge/feature_engineering/feature_engineering.md#4-familias-de-transformaciones",
+          "relevant": false
+        },
+        {
+          "rank": 4,
+          "chunk_id": "05750f8accec18dc7548",
+          "path": "knowledge/feature_engineering/feature_engineering.md",
+          "section": "Feature engineering para Machine Learning\n10. Errores frecuentes y riesgos",
+          "score": 0.537401,
+          "location": "knowledge/feature_engineering/feature_engineering.md#10-errores-frecuentes-y-riesgos",
+          "relevant": false
+        },
+        {
+          "rank": 5,
+          "chunk_id": "3d7c119055d3c28a6b6c",
+          "path": "knowledge/feature_engineering/feature_engineering.md",
+          "section": "Feature engineering para Machine Learning\n8. Reglas de decisión",
+          "score": 0.531632,
+          "location": "knowledge/feature_engineering/feature_engineering.md#8-reglas-de-decision",
+          "relevant": false
+        },
+        {
+          "rank": 6,
+          "chunk_id": "b6fe8d1b4ecf03cded89",
+          "path": "knowledge/feature_engineering/feature_engineering.md",
+          "section": "Feature engineering para Machine Learning\n5. Criterios para elegir una transformación",
+          "score": 0.520983,
+          "location": "knowledge/feature_engineering/feature_engineering.md#5-criterios-para-elegir-una-transformacion",
+          "relevant": false
+        },
+        {
+          "rank": 7,
+          "chunk_id": "ecf78eea475f4ad7824a",
+          "path": "knowledge/feature_engineering/feature_engineering.md",
+          "section": "Feature engineering para Machine Learning\n11. Aplicación en un coding test o datathon",
+          "score": 0.382802,
+          "location": "knowledge/feature_engineering/feature_engineering.md#11-aplicacion-en-un-coding-test-o-datathon",
+          "relevant": false
+        },
+        {
+          "rank": 8,
+          "chunk_id": "cead6ab0fc3f59be780c",
+          "path": "knowledge/feature_engineering/feature_engineering.md",
+          "section": "Feature engineering para Machine Learning\n2. Qué es una variable útil para el modelo",
+          "score": 0.35774,
+          "location": "knowledge/feature_engineering/feature_engineering.md#2-que-es-una-variable-util-para-el-modelo",
+          "relevant": false
+        },
+        {
+          "rank": 9,
+          "chunk_id": "15d453eae2bf05ea10ef",
+          "path": "knowledge/feature_engineering/feature_engineering.md",
+          "section": "Feature engineering para Machine Learning\n4. Familias de transformaciones\n4.5 Interacciones y combinaciones",
+          "score": 0.334045,
+          "location": "knowledge/feature_engineering/feature_engineering.md#45-interacciones-y-combinaciones",
+          "relevant": false
+        },
+        {
+          "rank": 10,
+          "chunk_id": "fcc5ce4d57e4bf1c8c0e",
+          "path": "knowledge/feature_engineering/feature_engineering.md",
+          "section": "Feature engineering para Machine Learning\n3. Flujo de trabajo para diseñar variables",
+          "score": 0.327198,
+          "location": "knowledge/feature_engineering/feature_engineering.md#3-flujo-de-trabajo-para-disenar-variables",
+          "relevant": false
+        }
+      ]
+    },
+    {
+      "id": "validation-kfold-direct",
+      "query": "¿Cómo se estima el rendimiento con validación cruzada K-Fold?",
+      "positive": true,
+      "expected_zero_results": false,
+      "expected_path": "knowledge/validation/validation_strategy.md",
+      "expected_section": "4.2 Validación cruzada K-Fold",
+      "expected_terms": [
+        "K-Fold",
+        "folds"
+      ],
+      "filters": {
+        "topic": "validation"
+      },
+      "correct": true,
+      "retrieved_zero_results": false,
+      "zero_results_match_expected": true,
+      "relevant_ranks": [
+        1
+      ],
+      "first_relevant_rank": 1,
+      "reciprocal_rank": 1.0,
+      "recall_at_k": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "observations": "Fragmento relevante en posición 1 de 10.",
+      "diversity_at_k": {
+        "1": {
+          "distinct_sections": 1,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "3": {
+          "distinct_sections": 3,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "5": {
+          "distinct_sections": 5,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "10": {
+          "distinct_sections": 9,
+          "repeated_fragments": 1,
+          "repeated_sections": [
+            {
+              "path": "knowledge/validation/validation_strategy.md",
+              "section_path": "Estrategias de validación para Machine Learning\n2. Qué estima la validación",
+              "count": 2
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "rank": 1,
+          "chunk_id": "56ced2e92c32cde4bc36",
+          "path": "knowledge/validation/validation_strategy.md",
+          "section": "Estrategias de validación para Machine Learning\n4. Estrategias de validación\n4.2 Validación cruzada K-Fold",
+          "score": 0.887707,
+          "location": "knowledge/validation/validation_strategy.md#42-validacion-cruzada-k-fold",
+          "relevant": true
+        },
+        {
+          "rank": 2,
+          "chunk_id": "f19a0c05ab281967b08f",
+          "path": "knowledge/validation/validation_strategy.md",
+          "section": "Estrategias de validación para Machine Learning\n2. Qué estima la validación",
+          "score": 0.88106,
+          "location": "knowledge/validation/validation_strategy.md#2-que-estima-la-validacion",
+          "relevant": false
+        },
+        {
+          "rank": 3,
+          "chunk_id": "d17cbdd6a569f7ea19dc",
+          "path": "knowledge/validation/validation_strategy.md",
+          "section": "Estrategias de validación para Machine Learning\n4. Estrategias de validación\n4.3 Stratified K-Fold",
+          "score": 0.831819,
+          "location": "knowledge/validation/validation_strategy.md#43-stratified-k-fold",
+          "relevant": false
+        },
+        {
+          "rank": 4,
+          "chunk_id": "ae29456ce4069fa426c1",
+          "path": "knowledge/validation/validation_strategy.md",
+          "section": "Estrategias de validación para Machine Learning\n14. Vacíos y limitaciones de las fuentes",
+          "score": 0.631134,
+          "location": "knowledge/validation/validation_strategy.md#14-vacios-y-limitaciones-de-las-fuentes",
+          "relevant": false
+        },
+        {
+          "rank": 5,
+          "chunk_id": "e495e7fa4a22bac8262b",
+          "path": "knowledge/validation/validation_strategy.md",
+          "section": "Estrategias de validación para Machine Learning\n4. Estrategias de validación\n4.1 Holdout",
+          "score": 0.578095,
+          "location": "knowledge/validation/validation_strategy.md#41-holdout",
+          "relevant": false
+        },
+        {
+          "rank": 6,
+          "chunk_id": "d345707691cab7eb8ee2",
+          "path": "knowledge/validation/validation_strategy.md",
+          "section": "Estrategias de validación para Machine Learning\n2. Qué estima la validación",
+          "score": 0.570672,
+          "location": "knowledge/validation/validation_strategy.md#2-que-estima-la-validacion",
+          "relevant": false
+        },
+        {
+          "rank": 7,
+          "chunk_id": "c90a1268a170808c9bf8",
+          "path": "knowledge/validation/validation_strategy.md",
+          "section": "Estrategias de validación para Machine Learning\n5. Cómo elegir una estrategia",
+          "score": 0.516914,
+          "location": "knowledge/validation/validation_strategy.md#5-como-elegir-una-estrategia",
+          "relevant": false
+        },
+        {
+          "rank": 8,
+          "chunk_id": "5c57dc0a85a54fe6fab0",
+          "path": "knowledge/validation/validation_strategy.md",
+          "section": "Estrategias de validación para Machine Learning\n15. Fuentes utilizadas",
+          "score": 0.486673,
+          "location": "knowledge/validation/validation_strategy.md#15-fuentes-utilizadas",
+          "relevant": false
+        },
+        {
+          "rank": 9,
+          "chunk_id": "c20fbc91a37a0550d180",
+          "path": "knowledge/validation/validation_strategy.md",
+          "section": "Estrategias de validación para Machine Learning\n3. Particiones de datos y su función\n3.1 Entrenamiento",
+          "score": 0.454239,
+          "location": "knowledge/validation/validation_strategy.md#31-entrenamiento",
+          "relevant": false
+        },
+        {
+          "rank": 10,
+          "chunk_id": "2c84c20dc52c9f248b8a",
+          "path": "knowledge/validation/validation_strategy.md",
+          "section": "Estrategias de validación para Machine Learning\n9. Reglas de decisión",
+          "score": 0.441949,
+          "location": "knowledge/validation/validation_strategy.md#9-reglas-de-decision",
+          "relevant": false
+        }
+      ]
+    },
+    {
+      "id": "validation-groupkfold-exact",
+      "query": "GroupKFold para mantener juntas entidades relacionadas",
+      "positive": true,
+      "expected_zero_results": false,
+      "expected_path": "knowledge/validation/validation_strategy.md",
+      "expected_section": "4.6 Datos agrupados o relacionados",
+      "expected_terms": [
+        "GroupKFold",
+        "grupos"
+      ],
+      "filters": {
+        "topic": "validation"
+      },
+      "correct": true,
+      "retrieved_zero_results": false,
+      "zero_results_match_expected": true,
+      "relevant_ranks": [
+        4
+      ],
+      "first_relevant_rank": 4,
+      "reciprocal_rank": 0.25,
+      "recall_at_k": {
+        "1": 0,
+        "3": 0,
+        "5": 1,
+        "10": 1
+      },
+      "observations": "Fragmento relevante en posición 4 de 10.",
+      "diversity_at_k": {
+        "1": {
+          "distinct_sections": 1,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "3": {
+          "distinct_sections": 3,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "5": {
+          "distinct_sections": 5,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "10": {
+          "distinct_sections": 10,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        }
+      },
+      "results": [
+        {
+          "rank": 1,
+          "chunk_id": "adef1fb0e2f74ea31653",
+          "path": "knowledge/validation/validation_strategy.md",
+          "section": "Estrategias de validación para Machine Learning\n8. Implementación mínima en Python\nValidación por grupos",
+          "score": 0.708128,
+          "location": "knowledge/validation/validation_strategy.md#validacion-por-grupos",
+          "relevant": false
+        },
+        {
+          "rank": 2,
+          "chunk_id": "4ff0eda24e49b7846574",
+          "path": "knowledge/validation/validation_strategy.md",
+          "section": "Estrategias de validación para Machine Learning\n4. Estrategias de validación\n4.4 Particiones repetibles",
+          "score": 0.572024,
+          "location": "knowledge/validation/validation_strategy.md#44-particiones-repetibles",
+          "relevant": false
+        },
+        {
+          "rank": 3,
+          "chunk_id": "c90a1268a170808c9bf8",
+          "path": "knowledge/validation/validation_strategy.md",
+          "section": "Estrategias de validación para Machine Learning\n5. Cómo elegir una estrategia",
+          "score": 0.524346,
+          "location": "knowledge/validation/validation_strategy.md#5-como-elegir-una-estrategia",
+          "relevant": false
+        },
+        {
+          "rank": 4,
+          "chunk_id": "e8a76af1a7f33f3bc38e",
+          "path": "knowledge/validation/validation_strategy.md",
+          "section": "Estrategias de validación para Machine Learning\n4. Estrategias de validación\n4.6 Datos agrupados o relacionados",
+          "score": 0.478118,
+          "location": "knowledge/validation/validation_strategy.md#46-datos-agrupados-o-relacionados",
+          "relevant": true
+        },
+        {
+          "rank": 5,
+          "chunk_id": "2c84c20dc52c9f248b8a",
+          "path": "knowledge/validation/validation_strategy.md",
+          "section": "Estrategias de validación para Machine Learning\n9. Reglas de decisión",
+          "score": 0.434123,
+          "location": "knowledge/validation/validation_strategy.md#9-reglas-de-decision",
+          "relevant": false
+        },
+        {
+          "rank": 6,
+          "chunk_id": "a359a54a46a8019d32ca",
+          "path": "knowledge/validation/validation_strategy.md",
+          "section": "Estrategias de validación para Machine Learning\n7. Prevención de data leakage durante la validación",
+          "score": 0.374994,
+          "location": "knowledge/validation/validation_strategy.md#7-prevencion-de-data-leakage-durante-la-validacion",
+          "relevant": false
+        },
+        {
+          "rank": 7,
+          "chunk_id": "97d88501ecea7ee990cc",
+          "path": "knowledge/validation/validation_strategy.md",
+          "section": "Estrategias de validación para Machine Learning\n10. Errores frecuentes y riesgos",
+          "score": 0.345744,
+          "location": "knowledge/validation/validation_strategy.md#10-errores-frecuentes-y-riesgos",
+          "relevant": false
+        },
+        {
+          "rank": 8,
+          "chunk_id": "56ced2e92c32cde4bc36",
+          "path": "knowledge/validation/validation_strategy.md",
+          "section": "Estrategias de validación para Machine Learning\n4. Estrategias de validación\n4.2 Validación cruzada K-Fold",
+          "score": 0.321385,
+          "location": "knowledge/validation/validation_strategy.md#42-validacion-cruzada-k-fold",
+          "relevant": false
+        },
+        {
+          "rank": 9,
+          "chunk_id": "5c57dc0a85a54fe6fab0",
+          "path": "knowledge/validation/validation_strategy.md",
+          "section": "Estrategias de validación para Machine Learning\n15. Fuentes utilizadas",
+          "score": 0.287118,
+          "location": "knowledge/validation/validation_strategy.md#15-fuentes-utilizadas",
+          "relevant": false
+        },
+        {
+          "rank": 10,
+          "chunk_id": "881ebe68bec945c1923e",
+          "path": "knowledge/validation/validation_strategy.md",
+          "section": "Estrategias de validación para Machine Learning\n1. Propósito y alcance",
+          "score": 0.23738,
+          "location": "knowledge/validation/validation_strategy.md#1-proposito-y-alcance",
+          "relevant": false
+        }
+      ]
+    },
+    {
+      "id": "leakage-future-paraphrase",
+      "query": "Evitar fuga temporal: ventanas, joins y timestamps deben respetar cuándo hay disponibilidad real de los datos",
+      "positive": true,
+      "expected_zero_results": false,
+      "expected_path": "knowledge/preprocessing/data_leakage.md",
+      "expected_section": "3.2 Leakage por información futura o no disponible",
+      "expected_terms": [
+        "timestamps",
+        "disponibilidad"
+      ],
+      "filters": {
+        "document_type": "knowledge",
+        "topic": "preprocessing"
+      },
+      "correct": true,
+      "retrieved_zero_results": false,
+      "zero_results_match_expected": true,
+      "relevant_ranks": [
+        1
+      ],
+      "first_relevant_rank": 1,
+      "reciprocal_rank": 1.0,
+      "recall_at_k": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "observations": "Fragmento relevante en posición 1 de 10.",
+      "diversity_at_k": {
+        "1": {
+          "distinct_sections": 1,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "3": {
+          "distinct_sections": 3,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "5": {
+          "distinct_sections": 5,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "10": {
+          "distinct_sections": 10,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        }
+      },
+      "results": [
+        {
+          "rank": 1,
+          "chunk_id": "519a8558edb4efea92b8",
+          "path": "knowledge/preprocessing/data_leakage.md",
+          "section": "Detección y prevención de data leakage\n3. Tipos o vías de leakage respaldadas por las fuentes\n3.2 Leakage por información futura o no disponible",
+          "score": 0.900086,
+          "location": "knowledge/preprocessing/data_leakage.md#32-leakage-por-informacion-futura-o-no-disponible",
+          "relevant": true
+        },
+        {
+          "rank": 2,
+          "chunk_id": "ec556eabc7b22b4a1a32",
+          "path": "knowledge/preprocessing/data_leakage.md",
+          "section": "Detección y prevención de data leakage\n12. Vacíos y limitaciones de las fuentes",
+          "score": 0.592772,
+          "location": "knowledge/preprocessing/data_leakage.md#12-vacios-y-limitaciones-de-las-fuentes",
+          "relevant": false
+        },
+        {
+          "rank": 3,
+          "chunk_id": "4753d70e518b7f51edc7",
+          "path": "knowledge/preprocessing/data_leakage.md",
+          "section": "Detección y prevención de data leakage\n4. Cómo detectar señales de leakage",
+          "score": 0.580645,
+          "location": "knowledge/preprocessing/data_leakage.md#4-como-detectar-senales-de-leakage",
+          "relevant": false
+        },
+        {
+          "rank": 4,
+          "chunk_id": "1960d1680d4a49c764cd",
+          "path": "knowledge/preprocessing/data_leakage.md",
+          "section": "Detección y prevención de data leakage\n6. Reglas de decisión",
+          "score": 0.568244,
+          "location": "knowledge/preprocessing/data_leakage.md#6-reglas-de-decision",
+          "relevant": false
+        },
+        {
+          "rank": 5,
+          "chunk_id": "b04c4827194cbbcdc142",
+          "path": "knowledge/preprocessing/data_leakage.md",
+          "section": "Detección y prevención de data leakage\n3. Tipos o vías de leakage respaldadas por las fuentes\n3.3 Leakage por construcción del objetivo o de las variables",
+          "score": 0.490015,
+          "location": "knowledge/preprocessing/data_leakage.md#33-leakage-por-construccion-del-objetivo-o-de-las-variables",
+          "relevant": false
+        },
+        {
+          "rank": 6,
+          "chunk_id": "94e36dd4c537f10cc79c",
+          "path": "knowledge/preprocessing/data_leakage.md",
+          "section": "Detección y prevención de data leakage\n13. Fuentes utilizadas",
+          "score": 0.460451,
+          "location": "knowledge/preprocessing/data_leakage.md#13-fuentes-utilizadas",
+          "relevant": false
+        },
+        {
+          "rank": 7,
+          "chunk_id": "a4ae28b5e988737ba9c0",
+          "path": "knowledge/preprocessing/data_leakage.md",
+          "section": "Detección y prevención de data leakage\n10. Checklist operativo",
+          "score": 0.458556,
+          "location": "knowledge/preprocessing/data_leakage.md#10-checklist-operativo",
+          "relevant": false
+        },
+        {
+          "rank": 8,
+          "chunk_id": "2665dabdaae544e827ce",
+          "path": "knowledge/preprocessing/data_leakage.md",
+          "section": "Detección y prevención de data leakage\n9. Aplicación en un coding test o datathon",
+          "score": 0.413771,
+          "location": "knowledge/preprocessing/data_leakage.md#9-aplicacion-en-un-coding-test-o-datathon",
+          "relevant": false
+        },
+        {
+          "rank": 9,
+          "chunk_id": "66cc757434a7549a913c",
+          "path": "knowledge/preprocessing/data_leakage.md",
+          "section": "Detección y prevención de data leakage\n2. Qué significa data leakage",
+          "score": 0.397695,
+          "location": "knowledge/preprocessing/data_leakage.md#2-que-significa-data-leakage",
+          "relevant": false
+        },
+        {
+          "rank": 10,
+          "chunk_id": "3247e7e01bcb0c6e2c8a",
+          "path": "knowledge/preprocessing/data_leakage.md",
+          "section": "Detección y prevención de data leakage\n5. Procedimiento para prevenirlo",
+          "score": 0.392109,
+          "location": "knowledge/preprocessing/data_leakage.md#5-procedimiento-para-prevenirlo",
+          "relevant": false
+        }
+      ]
+    },
+    {
+      "id": "leakage-signals-exact-filtered",
+      "query": "¿Cómo investigar la procedencia y disponibilidad de variables sospechosas antes de inferencia?",
+      "positive": true,
+      "expected_zero_results": false,
+      "expected_path": "knowledge/preprocessing/data_leakage.md",
+      "expected_section": "4. Cómo detectar señales de leakage",
+      "expected_terms": [
+        "inferencia",
+        "target"
+      ],
+      "filters": {
+        "document_type": "knowledge",
+        "topic": "preprocessing"
+      },
+      "correct": true,
+      "retrieved_zero_results": false,
+      "zero_results_match_expected": true,
+      "relevant_ranks": [
+        4
+      ],
+      "first_relevant_rank": 4,
+      "reciprocal_rank": 0.25,
+      "recall_at_k": {
+        "1": 0,
+        "3": 0,
+        "5": 1,
+        "10": 1
+      },
+      "observations": "Fragmento relevante en posición 4 de 10.",
+      "diversity_at_k": {
+        "1": {
+          "distinct_sections": 1,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "3": {
+          "distinct_sections": 3,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "5": {
+          "distinct_sections": 5,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "10": {
+          "distinct_sections": 9,
+          "repeated_fragments": 1,
+          "repeated_sections": [
+            {
+              "path": "knowledge/preprocessing/data_leakage.md",
+              "section_path": "Detección y prevención de data leakage\n2. Qué significa data leakage",
+              "count": 2
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "rank": 1,
+          "chunk_id": "8021ef087478f6915317",
+          "path": "knowledge/preprocessing/data_leakage.md",
+          "section": "Detección y prevención de data leakage\n3. Tipos o vías de leakage respaldadas por las fuentes\n3.3 Leakage por construcción del objetivo o de las variables",
+          "score": 0.822079,
+          "location": "knowledge/preprocessing/data_leakage.md#33-leakage-por-construccion-del-objetivo-o-de-las-variables",
+          "relevant": false
+        },
+        {
+          "rank": 2,
+          "chunk_id": "d50068691becdd22f78e",
+          "path": "knowledge/preprocessing/data_leakage.md",
+          "section": "Detección y prevención de data leakage\n2. Qué significa data leakage",
+          "score": 0.799342,
+          "location": "knowledge/preprocessing/data_leakage.md#2-que-significa-data-leakage",
+          "relevant": false
+        },
+        {
+          "rank": 3,
+          "chunk_id": "2665dabdaae544e827ce",
+          "path": "knowledge/preprocessing/data_leakage.md",
+          "section": "Detección y prevención de data leakage\n9. Aplicación en un coding test o datathon",
+          "score": 0.777875,
+          "location": "knowledge/preprocessing/data_leakage.md#9-aplicacion-en-un-coding-test-o-datathon",
+          "relevant": false
+        },
+        {
+          "rank": 4,
+          "chunk_id": "4753d70e518b7f51edc7",
+          "path": "knowledge/preprocessing/data_leakage.md",
+          "section": "Detección y prevención de data leakage\n4. Cómo detectar señales de leakage",
+          "score": 0.723048,
+          "location": "knowledge/preprocessing/data_leakage.md#4-como-detectar-senales-de-leakage",
+          "relevant": true
+        },
+        {
+          "rank": 5,
+          "chunk_id": "ec556eabc7b22b4a1a32",
+          "path": "knowledge/preprocessing/data_leakage.md",
+          "section": "Detección y prevención de data leakage\n12. Vacíos y limitaciones de las fuentes",
+          "score": 0.697583,
+          "location": "knowledge/preprocessing/data_leakage.md#12-vacios-y-limitaciones-de-las-fuentes",
+          "relevant": false
+        },
+        {
+          "rank": 6,
+          "chunk_id": "a4ae28b5e988737ba9c0",
+          "path": "knowledge/preprocessing/data_leakage.md",
+          "section": "Detección y prevención de data leakage\n10. Checklist operativo",
+          "score": 0.599566,
+          "location": "knowledge/preprocessing/data_leakage.md#10-checklist-operativo",
+          "relevant": false
+        },
+        {
+          "rank": 7,
+          "chunk_id": "ab17f201bd3d6a41f799",
+          "path": "knowledge/preprocessing/data_leakage.md",
+          "section": "Detección y prevención de data leakage\n11. Relación con otros documentos de `knowledge/`",
+          "score": 0.586219,
+          "location": "knowledge/preprocessing/data_leakage.md#11-relacion-con-otros-documentos-de-knowledge",
+          "relevant": false
+        },
+        {
+          "rank": 8,
+          "chunk_id": "519a8558edb4efea92b8",
+          "path": "knowledge/preprocessing/data_leakage.md",
+          "section": "Detección y prevención de data leakage\n3. Tipos o vías de leakage respaldadas por las fuentes\n3.2 Leakage por información futura o no disponible",
+          "score": 0.537011,
+          "location": "knowledge/preprocessing/data_leakage.md#32-leakage-por-informacion-futura-o-no-disponible",
+          "relevant": false
+        },
+        {
+          "rank": 9,
+          "chunk_id": "3206e6ea71bf0427a7b9",
+          "path": "knowledge/preprocessing/data_leakage.md",
+          "section": "Detección y prevención de data leakage\n8. Errores frecuentes y riesgos",
+          "score": 0.524783,
+          "location": "knowledge/preprocessing/data_leakage.md#8-errores-frecuentes-y-riesgos",
+          "relevant": false
+        },
+        {
+          "rank": 10,
+          "chunk_id": "66cc757434a7549a913c",
+          "path": "knowledge/preprocessing/data_leakage.md",
+          "section": "Detección y prevención de data leakage\n2. Qué significa data leakage",
+          "score": 0.445515,
+          "location": "knowledge/preprocessing/data_leakage.md#2-que-significa-data-leakage",
+          "relevant": false
+        }
+      ]
+    },
+    {
+      "id": "classification-confusion-paraphrase",
+      "query": "¿Cómo se interpretan los aciertos y errores de un clasificador según la etiqueta positiva?",
+      "positive": true,
+      "expected_zero_results": false,
+      "expected_path": "knowledge/metrics/classification_metrics.md",
+      "expected_section": "3. Matriz de confusión",
+      "expected_terms": [
+        "clase positiva",
+        "especificidad"
+      ],
+      "filters": {
+        "topic": "metrics"
+      },
+      "correct": true,
+      "retrieved_zero_results": false,
+      "zero_results_match_expected": true,
+      "relevant_ranks": [
+        1
+      ],
+      "first_relevant_rank": 1,
+      "reciprocal_rank": 1.0,
+      "recall_at_k": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "observations": "Fragmento relevante en posición 1 de 10.",
+      "diversity_at_k": {
+        "1": {
+          "distinct_sections": 1,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "3": {
+          "distinct_sections": 3,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "5": {
+          "distinct_sections": 5,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "10": {
+          "distinct_sections": 9,
+          "repeated_fragments": 1,
+          "repeated_sections": [
+            {
+              "path": "knowledge/metrics/classification_metrics.md",
+              "section_path": "Métricas de clasificación\n8. Cómo elegir una métrica",
+              "count": 2
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "rank": 1,
+          "chunk_id": "29c4899ab7b2ba4aeffd",
+          "path": "knowledge/metrics/classification_metrics.md",
+          "section": "Métricas de clasificación\n3. Matriz de confusión",
+          "score": 0.849052,
+          "location": "knowledge/metrics/classification_metrics.md#3-matriz-de-confusion",
+          "relevant": true
+        },
+        {
+          "rank": 2,
+          "chunk_id": "ed830feb398d73da8257",
+          "path": "knowledge/metrics/classification_metrics.md",
+          "section": "Métricas de clasificación\n6. Clasificación desbalanceada",
+          "score": 0.820859,
+          "location": "knowledge/metrics/classification_metrics.md#6-clasificacion-desbalanceada",
+          "relevant": false
+        },
+        {
+          "rank": 3,
+          "chunk_id": "6e02e04d427fa8dd7d76",
+          "path": "knowledge/metrics/classification_metrics.md",
+          "section": "Métricas de clasificación\n2. Qué significa evaluar un clasificador",
+          "score": 0.705694,
+          "location": "knowledge/metrics/classification_metrics.md#2-que-significa-evaluar-un-clasificador",
+          "relevant": false
+        },
+        {
+          "rank": 4,
+          "chunk_id": "0537289a68f863c3e0d4",
+          "path": "knowledge/metrics/classification_metrics.md",
+          "section": "Métricas de clasificación\n11. Aplicación en un coding test o datathon",
+          "score": 0.660658,
+          "location": "knowledge/metrics/classification_metrics.md#11-aplicacion-en-un-coding-test-o-datathon",
+          "relevant": false
+        },
+        {
+          "rank": 5,
+          "chunk_id": "0a55eff7813be7b559b3",
+          "path": "knowledge/metrics/classification_metrics.md",
+          "section": "Métricas de clasificación\n7. Clasificación multiclase y multilabel",
+          "score": 0.627247,
+          "location": "knowledge/metrics/classification_metrics.md#7-clasificacion-multiclase-y-multilabel",
+          "relevant": false
+        },
+        {
+          "rank": 6,
+          "chunk_id": "c31079e7ff166b12bbf9",
+          "path": "knowledge/metrics/classification_metrics.md",
+          "section": "Métricas de clasificación\n8. Cómo elegir una métrica",
+          "score": 0.604583,
+          "location": "knowledge/metrics/classification_metrics.md#8-como-elegir-una-metrica",
+          "relevant": false
+        },
+        {
+          "rank": 7,
+          "chunk_id": "7f67ac24c7c529f379cd",
+          "path": "knowledge/metrics/classification_metrics.md",
+          "section": "Métricas de clasificación\n4. Métricas principales",
+          "score": 0.601345,
+          "location": "knowledge/metrics/classification_metrics.md#4-metricas-principales",
+          "relevant": false
+        },
+        {
+          "rank": 8,
+          "chunk_id": "c22824b788d66f1eb11a",
+          "path": "knowledge/metrics/classification_metrics.md",
+          "section": "Métricas de clasificación\n8. Cómo elegir una métrica",
+          "score": 0.512403,
+          "location": "knowledge/metrics/classification_metrics.md#8-como-elegir-una-metrica",
+          "relevant": false
+        },
+        {
+          "rank": 9,
+          "chunk_id": "a08559f23b9b78a8241a",
+          "path": "knowledge/metrics/classification_metrics.md",
+          "section": "Métricas de clasificación\n5. Curvas y métricas basadas en puntuaciones",
+          "score": 0.487975,
+          "location": "knowledge/metrics/classification_metrics.md#5-curvas-y-metricas-basadas-en-puntuaciones",
+          "relevant": false
+        },
+        {
+          "rank": 10,
+          "chunk_id": "6a6e06bc0d963219bc10",
+          "path": "knowledge/metrics/classification_metrics.md",
+          "section": "Métricas de clasificación\n12. Checklist operativo",
+          "score": 0.471171,
+          "location": "knowledge/metrics/classification_metrics.md#12-checklist-operativo",
+          "relevant": false
+        }
+      ]
+    },
+    {
+      "id": "classification-f1-exact",
+      "query": "F1, precision, recall y media armónica para clasificación",
+      "positive": true,
+      "expected_zero_results": false,
+      "expected_path": "knowledge/metrics/classification_metrics.md",
+      "expected_section": "4.5 F1 y otras métricas",
+      "expected_terms": [
+        "F1",
+        "precision",
+        "recall"
+      ],
+      "filters": {
+        "topic": "metrics"
+      },
+      "correct": true,
+      "retrieved_zero_results": false,
+      "zero_results_match_expected": true,
+      "relevant_ranks": [
+        1
+      ],
+      "first_relevant_rank": 1,
+      "reciprocal_rank": 1.0,
+      "recall_at_k": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "observations": "Fragmento relevante en posición 1 de 10.",
+      "diversity_at_k": {
+        "1": {
+          "distinct_sections": 1,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "3": {
+          "distinct_sections": 3,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "5": {
+          "distinct_sections": 5,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "10": {
+          "distinct_sections": 9,
+          "repeated_fragments": 1,
+          "repeated_sections": [
+            {
+              "path": "knowledge/metrics/classification_metrics.md",
+              "section_path": "Métricas de clasificación\n9. Implementación mínima en Python",
+              "count": 2
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "rank": 1,
+          "chunk_id": "fcf57d873f366a636472",
+          "path": "knowledge/metrics/classification_metrics.md",
+          "section": "Métricas de clasificación\n4. Métricas principales\n4.5 F1 y otras métricas",
+          "score": 0.948827,
+          "location": "knowledge/metrics/classification_metrics.md#45-f1-y-otras-metricas",
+          "relevant": true
+        },
+        {
+          "rank": 2,
+          "chunk_id": "7f67ac24c7c529f379cd",
+          "path": "knowledge/metrics/classification_metrics.md",
+          "section": "Métricas de clasificación\n4. Métricas principales",
+          "score": 0.723537,
+          "location": "knowledge/metrics/classification_metrics.md#4-metricas-principales",
+          "relevant": false
+        },
+        {
+          "rank": 3,
+          "chunk_id": "c31079e7ff166b12bbf9",
+          "path": "knowledge/metrics/classification_metrics.md",
+          "section": "Métricas de clasificación\n8. Cómo elegir una métrica",
+          "score": 0.697927,
+          "location": "knowledge/metrics/classification_metrics.md#8-como-elegir-una-metrica",
+          "relevant": false
+        },
+        {
+          "rank": 4,
+          "chunk_id": "0400589bc4fff830bf11",
+          "path": "knowledge/metrics/classification_metrics.md",
+          "section": "Métricas de clasificación\n5. Curvas y métricas basadas en puntuaciones\n5.3 Umbral de decisión",
+          "score": 0.617162,
+          "location": "knowledge/metrics/classification_metrics.md#53-umbral-de-decision",
+          "relevant": false
+        },
+        {
+          "rank": 5,
+          "chunk_id": "48b0b34e047a10909b80",
+          "path": "knowledge/metrics/classification_metrics.md",
+          "section": "Métricas de clasificación\n5. Curvas y métricas basadas en puntuaciones\n5.2 Precisión-recall y PR-AUC",
+          "score": 0.578947,
+          "location": "knowledge/metrics/classification_metrics.md#52-precision-recall-y-pr-auc",
+          "relevant": false
+        },
+        {
+          "rank": 6,
+          "chunk_id": "ed830feb398d73da8257",
+          "path": "knowledge/metrics/classification_metrics.md",
+          "section": "Métricas de clasificación\n6. Clasificación desbalanceada",
+          "score": 0.55901,
+          "location": "knowledge/metrics/classification_metrics.md#6-clasificacion-desbalanceada",
+          "relevant": false
+        },
+        {
+          "rank": 7,
+          "chunk_id": "531184332674d6fd7711",
+          "path": "knowledge/metrics/classification_metrics.md",
+          "section": "Métricas de clasificación\n4. Métricas principales\n4.2 Precision",
+          "score": 0.558293,
+          "location": "knowledge/metrics/classification_metrics.md#42-precision",
+          "relevant": false
+        },
+        {
+          "rank": 8,
+          "chunk_id": "107283be3bcf88d052c5",
+          "path": "knowledge/metrics/classification_metrics.md",
+          "section": "Métricas de clasificación\n9. Implementación mínima en Python",
+          "score": 0.555229,
+          "location": "knowledge/metrics/classification_metrics.md#9-implementacion-minima-en-python",
+          "relevant": false
+        },
+        {
+          "rank": 9,
+          "chunk_id": "c7b80f88ef67951cee8c",
+          "path": "knowledge/metrics/classification_metrics.md",
+          "section": "Métricas de clasificación\n9. Implementación mínima en Python",
+          "score": 0.527755,
+          "location": "knowledge/metrics/classification_metrics.md#9-implementacion-minima-en-python",
+          "relevant": false
+        },
+        {
+          "rank": 10,
+          "chunk_id": "29c4899ab7b2ba4aeffd",
+          "path": "knowledge/metrics/classification_metrics.md",
+          "section": "Métricas de clasificación\n3. Matriz de confusión",
+          "score": 0.516523,
+          "location": "knowledge/metrics/classification_metrics.md#3-matriz-de-confusion",
+          "relevant": false
+        }
+      ]
+    },
+    {
+      "id": "regression-mae-exact",
+      "query": "MAE error absoluto medio y unidades del objetivo",
+      "positive": true,
+      "expected_zero_results": false,
+      "expected_path": "knowledge/metrics/regression_metrics.md",
+      "expected_section": "4.1 MAE",
+      "expected_terms": [
+        "MAE",
+        "unidades del objetivo"
+      ],
+      "filters": {
+        "topic": "metrics"
+      },
+      "correct": true,
+      "retrieved_zero_results": false,
+      "zero_results_match_expected": true,
+      "relevant_ranks": [
+        1
+      ],
+      "first_relevant_rank": 1,
+      "reciprocal_rank": 1.0,
+      "recall_at_k": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "observations": "Fragmento relevante en posición 1 de 10.",
+      "diversity_at_k": {
+        "1": {
+          "distinct_sections": 1,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "3": {
+          "distinct_sections": 3,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "5": {
+          "distinct_sections": 5,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "10": {
+          "distinct_sections": 10,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        }
+      },
+      "results": [
+        {
+          "rank": 1,
+          "chunk_id": "5dd0af5d5d6d893abfea",
+          "path": "knowledge/metrics/regression_metrics.md",
+          "section": "Métricas de regresión\n4. Métricas principales\n4.1 MAE",
+          "score": 0.91723,
+          "location": "knowledge/metrics/regression_metrics.md#41-mae",
+          "relevant": true
+        },
+        {
+          "rank": 2,
+          "chunk_id": "627896dd8b968e4dfc20",
+          "path": "knowledge/metrics/regression_metrics.md",
+          "section": "Métricas de regresión\n5. Sensibilidad a escala y valores extremos",
+          "score": 0.803376,
+          "location": "knowledge/metrics/regression_metrics.md#5-sensibilidad-a-escala-y-valores-extremos",
+          "relevant": false
+        },
+        {
+          "rank": 3,
+          "chunk_id": "8d4a06196d3ef41e69df",
+          "path": "knowledge/metrics/regression_metrics.md",
+          "section": "Métricas de regresión\n7. Cómo elegir una métrica",
+          "score": 0.764602,
+          "location": "knowledge/metrics/regression_metrics.md#7-como-elegir-una-metrica",
+          "relevant": false
+        },
+        {
+          "rank": 4,
+          "chunk_id": "755960fa2069a9cd86b1",
+          "path": "knowledge/metrics/regression_metrics.md",
+          "section": "Métricas de regresión\n4. Métricas principales\n4.3 RMSE",
+          "score": 0.666373,
+          "location": "knowledge/metrics/regression_metrics.md#43-rmse",
+          "relevant": false
+        },
+        {
+          "rank": 5,
+          "chunk_id": "f53cd1c9cd0de238f53b",
+          "path": "knowledge/metrics/regression_metrics.md",
+          "section": "Métricas de regresión\n4. Métricas principales\n4.2 MSE",
+          "score": 0.642435,
+          "location": "knowledge/metrics/regression_metrics.md#42-mse",
+          "relevant": false
+        },
+        {
+          "rank": 6,
+          "chunk_id": "cb1bf5374ecc656f15ed",
+          "path": "knowledge/metrics/regression_metrics.md",
+          "section": "Métricas de regresión\n4. Métricas principales\n4.5 Otras métricas respaldadas por las fuentes",
+          "score": 0.623729,
+          "location": "knowledge/metrics/regression_metrics.md#45-otras-metricas-respaldadas-por-las-fuentes",
+          "relevant": false
+        },
+        {
+          "rank": 7,
+          "chunk_id": "2b1e3e7ead227f6214bf",
+          "path": "knowledge/metrics/regression_metrics.md",
+          "section": "Métricas de regresión\n14. Fuentes utilizadas",
+          "score": 0.56034,
+          "location": "knowledge/metrics/regression_metrics.md#14-fuentes-utilizadas",
+          "relevant": false
+        },
+        {
+          "rank": 8,
+          "chunk_id": "705388121f36d5b4a161",
+          "path": "knowledge/metrics/regression_metrics.md",
+          "section": "Métricas de regresión\n15. Trazabilidad",
+          "score": 0.509776,
+          "location": "knowledge/metrics/regression_metrics.md#15-trazabilidad",
+          "relevant": false
+        },
+        {
+          "rank": 9,
+          "chunk_id": "ba55a78b5198f0b26c6b",
+          "path": "knowledge/metrics/regression_metrics.md",
+          "section": "Métricas de regresión\n13. Vacíos y limitaciones de las fuentes",
+          "score": 0.483285,
+          "location": "knowledge/metrics/regression_metrics.md#13-vacios-y-limitaciones-de-las-fuentes",
+          "relevant": false
+        },
+        {
+          "rank": 10,
+          "chunk_id": "2bcd615357cf9eaeba29",
+          "path": "knowledge/metrics/regression_metrics.md",
+          "section": "Métricas de regresión\n2. Qué significa evaluar un modelo de regresión",
+          "score": 0.475443,
+          "location": "knowledge/metrics/regression_metrics.md#2-que-significa-evaluar-un-modelo-de-regresion",
+          "relevant": false
+        }
+      ]
+    },
+    {
+      "id": "models-logistic-direct",
+      "query": "¿Qué modelo lineal estima probabilidades para predecir una clase?",
+      "positive": true,
+      "expected_zero_results": false,
+      "expected_path": "knowledge/models/tabular_models.md",
+      "expected_section": "3.2 Regresión logística",
+      "expected_terms": [
+        "Regresión logística",
+        "probabilidad"
+      ],
+      "filters": {
+        "topic": "models"
+      },
+      "correct": true,
+      "retrieved_zero_results": false,
+      "zero_results_match_expected": true,
+      "relevant_ranks": [
+        1
+      ],
+      "first_relevant_rank": 1,
+      "reciprocal_rank": 1.0,
+      "recall_at_k": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "observations": "Fragmento relevante en posición 1 de 10.",
+      "diversity_at_k": {
+        "1": {
+          "distinct_sections": 1,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "3": {
+          "distinct_sections": 3,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "5": {
+          "distinct_sections": 5,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "10": {
+          "distinct_sections": 8,
+          "repeated_fragments": 2,
+          "repeated_sections": [
+            {
+              "path": "knowledge/models/tabular_models.md",
+              "section_path": "Modelos de Machine Learning para datos tabulares\n7. Requisitos de preparación según el modelo",
+              "count": 2
+            },
+            {
+              "path": "knowledge/models/tabular_models.md",
+              "section_path": "Modelos de Machine Learning para datos tabulares\n9. Reglas de decisión",
+              "count": 2
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "rank": 1,
+          "chunk_id": "4ba2f04b9c9a0607a9b9",
+          "path": "knowledge/models/tabular_models.md",
+          "section": "Modelos de Machine Learning para datos tabulares\n3. Modelos lineales\n3.2 Regresión logística",
+          "score": 0.881212,
+          "location": "knowledge/models/tabular_models.md#32-regresion-logistica",
+          "relevant": true
+        },
+        {
+          "rank": 2,
+          "chunk_id": "689fe76881846127e100",
+          "path": "knowledge/models/tabular_models.md",
+          "section": "Modelos de Machine Learning para datos tabulares\n6. Otras familias respaldadas por las fuentes\nNaive Bayes",
+          "score": 0.789379,
+          "location": "knowledge/models/tabular_models.md#naive-bayes",
+          "relevant": false
+        },
+        {
+          "rank": 3,
+          "chunk_id": "93cc2c205ef40248b5cd",
+          "path": "knowledge/models/tabular_models.md",
+          "section": "Modelos de Machine Learning para datos tabulares\n6. Otras familias respaldadas por las fuentes\nLDA y QDA",
+          "score": 0.724816,
+          "location": "knowledge/models/tabular_models.md#lda-y-qda",
+          "relevant": false
+        },
+        {
+          "rank": 4,
+          "chunk_id": "59c62c294a898e2c555e",
+          "path": "knowledge/models/tabular_models.md",
+          "section": "Modelos de Machine Learning para datos tabulares\n2. Cómo comparar familias de modelos",
+          "score": 0.668344,
+          "location": "knowledge/models/tabular_models.md#2-como-comparar-familias-de-modelos",
+          "relevant": false
+        },
+        {
+          "rank": 5,
+          "chunk_id": "28342b8c9482463a300b",
+          "path": "knowledge/models/tabular_models.md",
+          "section": "Modelos de Machine Learning para datos tabulares\n9. Reglas de decisión",
+          "score": 0.603234,
+          "location": "knowledge/models/tabular_models.md#9-reglas-de-decision",
+          "relevant": false
+        },
+        {
+          "rank": 6,
+          "chunk_id": "5e774c76d039ea195c87",
+          "path": "knowledge/models/tabular_models.md",
+          "section": "Modelos de Machine Learning para datos tabulares\n7. Requisitos de preparación según el modelo",
+          "score": 0.559524,
+          "location": "knowledge/models/tabular_models.md#7-requisitos-de-preparacion-segun-el-modelo",
+          "relevant": false
+        },
+        {
+          "rank": 7,
+          "chunk_id": "ebb58378a93b12bfd1f0",
+          "path": "knowledge/models/tabular_models.md",
+          "section": "Modelos de Machine Learning para datos tabulares\n9. Reglas de decisión",
+          "score": 0.536416,
+          "location": "knowledge/models/tabular_models.md#9-reglas-de-decision",
+          "relevant": false
+        },
+        {
+          "rank": 8,
+          "chunk_id": "9cad9b0c76bf6e3638aa",
+          "path": "knowledge/models/tabular_models.md",
+          "section": "Modelos de Machine Learning para datos tabulares\n6. Otras familias respaldadas por las fuentes\nMáquinas de soporte vectorial",
+          "score": 0.445928,
+          "location": "knowledge/models/tabular_models.md#maquinas-de-soporte-vectorial",
+          "relevant": false
+        },
+        {
+          "rank": 9,
+          "chunk_id": "286229d4e359e00604eb",
+          "path": "knowledge/models/tabular_models.md",
+          "section": "Modelos de Machine Learning para datos tabulares\n3. Modelos lineales\n3.1 Regresión lineal",
+          "score": 0.443454,
+          "location": "knowledge/models/tabular_models.md#31-regresion-lineal",
+          "relevant": false
+        },
+        {
+          "rank": 10,
+          "chunk_id": "7edd8b0733b60138b22c",
+          "path": "knowledge/models/tabular_models.md",
+          "section": "Modelos de Machine Learning para datos tabulares\n7. Requisitos de preparación según el modelo",
+          "score": 0.428356,
+          "location": "knowledge/models/tabular_models.md#7-requisitos-de-preparacion-segun-el-modelo",
+          "relevant": false
+        }
+      ]
+    },
+    {
+      "id": "ensembles-boosting-exact",
+      "query": "AdaBoost y boosting construyen aprendices secuencialmente",
+      "positive": true,
+      "expected_zero_results": false,
+      "expected_path": "knowledge/ensembles/boosting_models.md",
+      "expected_section": "3.4 Boosting",
+      "expected_terms": [
+        "AdaBoost",
+        "secuencial"
+      ],
+      "filters": {
+        "topic": "ensembles"
+      },
+      "correct": true,
+      "retrieved_zero_results": false,
+      "zero_results_match_expected": true,
+      "relevant_ranks": [
+        1
+      ],
+      "first_relevant_rank": 1,
+      "reciprocal_rank": 1.0,
+      "recall_at_k": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "observations": "Fragmento relevante en posición 1 de 10.",
+      "diversity_at_k": {
+        "1": {
+          "distinct_sections": 1,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "3": {
+          "distinct_sections": 3,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "5": {
+          "distinct_sections": 5,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "10": {
+          "distinct_sections": 9,
+          "repeated_fragments": 1,
+          "repeated_sections": [
+            {
+              "path": "knowledge/ensembles/boosting_models.md",
+              "section_path": "Ensembles y modelos de boosting para datos tabulares\n3. Familias de métodos de ensamble",
+              "count": 2
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "rank": 1,
+          "chunk_id": "9cb6e17c72fb45392651",
+          "path": "knowledge/ensembles/boosting_models.md",
+          "section": "Ensembles y modelos de boosting para datos tabulares\n3. Familias de métodos de ensamble\n3.4 Boosting",
+          "score": 0.930131,
+          "location": "knowledge/ensembles/boosting_models.md#34-boosting",
+          "relevant": true
+        },
+        {
+          "rank": 2,
+          "chunk_id": "363b47dc4c52806a454c",
+          "path": "knowledge/ensembles/boosting_models.md",
+          "section": "Ensembles y modelos de boosting para datos tabulares\n5. Diferencias entre familias",
+          "score": 0.900984,
+          "location": "knowledge/ensembles/boosting_models.md#5-diferencias-entre-familias",
+          "relevant": false
+        },
+        {
+          "rank": 3,
+          "chunk_id": "38ddc5bf86bb138c1ecc",
+          "path": "knowledge/ensembles/boosting_models.md",
+          "section": "Ensembles y modelos de boosting para datos tabulares\n6. Selección de un método de ensamble",
+          "score": 0.887697,
+          "location": "knowledge/ensembles/boosting_models.md#6-seleccion-de-un-metodo-de-ensamble",
+          "relevant": false
+        },
+        {
+          "rank": 4,
+          "chunk_id": "0bae34150c4cb9e2bfa8",
+          "path": "knowledge/ensembles/boosting_models.md",
+          "section": "Ensembles y modelos de boosting para datos tabulares\n3. Familias de métodos de ensamble",
+          "score": 0.827146,
+          "location": "knowledge/ensembles/boosting_models.md#3-familias-de-metodos-de-ensamble",
+          "relevant": false
+        },
+        {
+          "rank": 5,
+          "chunk_id": "79ae42353bee1f272bdc",
+          "path": "knowledge/ensembles/boosting_models.md",
+          "section": "Ensembles y modelos de boosting para datos tabulares\n4. Cómo funciona el boosting",
+          "score": 0.761677,
+          "location": "knowledge/ensembles/boosting_models.md#4-como-funciona-el-boosting",
+          "relevant": false
+        },
+        {
+          "rank": 6,
+          "chunk_id": "26664039d145ebc5433b",
+          "path": "knowledge/ensembles/boosting_models.md",
+          "section": "Ensembles y modelos de boosting para datos tabulares\n3. Familias de métodos de ensamble",
+          "score": 0.746097,
+          "location": "knowledge/ensembles/boosting_models.md#3-familias-de-metodos-de-ensamble",
+          "relevant": false
+        },
+        {
+          "rank": 7,
+          "chunk_id": "90aa1bae4fad11687d08",
+          "path": "knowledge/ensembles/boosting_models.md",
+          "section": "Ensembles y modelos de boosting para datos tabulares\n2. Qué es un ensemble",
+          "score": 0.745754,
+          "location": "knowledge/ensembles/boosting_models.md#2-que-es-un-ensemble",
+          "relevant": false
+        },
+        {
+          "rank": 8,
+          "chunk_id": "4fb72c9e62e53f9bb872",
+          "path": "knowledge/ensembles/boosting_models.md",
+          "section": "Ensembles y modelos de boosting para datos tabulares\n10. Reglas de decisión",
+          "score": 0.743679,
+          "location": "knowledge/ensembles/boosting_models.md#10-reglas-de-decision",
+          "relevant": false
+        },
+        {
+          "rank": 9,
+          "chunk_id": "6de87931234d8c326588",
+          "path": "knowledge/ensembles/boosting_models.md",
+          "section": "Ensembles y modelos de boosting para datos tabulares\n8. Sobreajuste, limitaciones y costo computacional",
+          "score": 0.718638,
+          "location": "knowledge/ensembles/boosting_models.md#8-sobreajuste-limitaciones-y-costo-computacional",
+          "relevant": false
+        },
+        {
+          "rank": 10,
+          "chunk_id": "79bcca50b43aa843e770",
+          "path": "knowledge/ensembles/boosting_models.md",
+          "section": "Ensembles y modelos de boosting para datos tabulares\n15. Fuentes utilizadas",
+          "score": 0.714054,
+          "location": "knowledge/ensembles/boosting_models.md#15-fuentes-utilizadas",
+          "relevant": false
+        }
+      ]
+    },
+    {
+      "id": "tuning-random-search-paraphrase",
+      "query": "Explorar configuraciones al azar con un límite de pruebas en vez de recorrer todas las combinaciones",
+      "positive": true,
+      "expected_zero_results": false,
+      "expected_path": "knowledge/tuning/hyperparameter_tuning.md",
+      "expected_section": "5.3 Búsqueda aleatoria",
+      "expected_terms": [
+        "n_iter",
+        "presupuesto"
+      ],
+      "filters": {
+        "topic": "tuning"
+      },
+      "correct": true,
+      "retrieved_zero_results": false,
+      "zero_results_match_expected": true,
+      "relevant_ranks": [
+        3
+      ],
+      "first_relevant_rank": 3,
+      "reciprocal_rank": 0.3333333333333333,
+      "recall_at_k": {
+        "1": 0,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "observations": "Fragmento relevante en posición 3 de 10.",
+      "diversity_at_k": {
+        "1": {
+          "distinct_sections": 1,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "3": {
+          "distinct_sections": 3,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "5": {
+          "distinct_sections": 5,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "10": {
+          "distinct_sections": 10,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        }
+      },
+      "results": [
+        {
+          "rank": 1,
+          "chunk_id": "4eeaf3757910b79754ce",
+          "path": "knowledge/tuning/hyperparameter_tuning.md",
+          "section": "Ajuste de hiperparámetros\n5. Métodos de búsqueda\n5.2 Búsqueda en rejilla",
+          "score": 0.887802,
+          "location": "knowledge/tuning/hyperparameter_tuning.md#52-busqueda-en-rejilla",
+          "relevant": false
+        },
+        {
+          "rank": 2,
+          "chunk_id": "6231262484b28074f905",
+          "path": "knowledge/tuning/hyperparameter_tuning.md",
+          "section": "Ajuste de hiperparámetros\n8. Presupuesto computacional y criterios para detenerse",
+          "score": 0.81535,
+          "location": "knowledge/tuning/hyperparameter_tuning.md#8-presupuesto-computacional-y-criterios-para-detenerse",
+          "relevant": false
+        },
+        {
+          "rank": 3,
+          "chunk_id": "2f5f21495bca0c4b5be7",
+          "path": "knowledge/tuning/hyperparameter_tuning.md",
+          "section": "Ajuste de hiperparámetros\n5. Métodos de búsqueda\n5.3 Búsqueda aleatoria",
+          "score": 0.797832,
+          "location": "knowledge/tuning/hyperparameter_tuning.md#53-busqueda-aleatoria",
+          "relevant": true
+        },
+        {
+          "rank": 4,
+          "chunk_id": "df2516efbf1b872b95e3",
+          "path": "knowledge/tuning/hyperparameter_tuning.md",
+          "section": "Ajuste de hiperparámetros\n11. Errores frecuentes y riesgos",
+          "score": 0.715798,
+          "location": "knowledge/tuning/hyperparameter_tuning.md#11-errores-frecuentes-y-riesgos",
+          "relevant": false
+        },
+        {
+          "rank": 5,
+          "chunk_id": "7384df3eb16a673e340e",
+          "path": "knowledge/tuning/hyperparameter_tuning.md",
+          "section": "Ajuste de hiperparámetros\n6. Evaluación de configuraciones",
+          "score": 0.683539,
+          "location": "knowledge/tuning/hyperparameter_tuning.md#6-evaluacion-de-configuraciones",
+          "relevant": false
+        },
+        {
+          "rank": 6,
+          "chunk_id": "999a7e520b0c211b13e1",
+          "path": "knowledge/tuning/hyperparameter_tuning.md",
+          "section": "Ajuste de hiperparámetros\n1. Propósito y alcance",
+          "score": 0.587067,
+          "location": "knowledge/tuning/hyperparameter_tuning.md#1-proposito-y-alcance",
+          "relevant": false
+        },
+        {
+          "rank": 7,
+          "chunk_id": "86cb429d92eb1bb41701",
+          "path": "knowledge/tuning/hyperparameter_tuning.md",
+          "section": "Ajuste de hiperparámetros\n10. Reglas de decisión",
+          "score": 0.585902,
+          "location": "knowledge/tuning/hyperparameter_tuning.md#10-reglas-de-decision",
+          "relevant": false
+        },
+        {
+          "rank": 8,
+          "chunk_id": "6689d4bbd5a224181d01",
+          "path": "knowledge/tuning/hyperparameter_tuning.md",
+          "section": "Ajuste de hiperparámetros\n4. Diseño del espacio de búsqueda",
+          "score": 0.572707,
+          "location": "knowledge/tuning/hyperparameter_tuning.md#4-diseno-del-espacio-de-busqueda",
+          "relevant": false
+        },
+        {
+          "rank": 9,
+          "chunk_id": "ebeb6a9294a0b44128a9",
+          "path": "knowledge/tuning/hyperparameter_tuning.md",
+          "section": "Ajuste de hiperparámetros\n5. Métodos de búsqueda\n5.1 Ajuste manual",
+          "score": 0.539249,
+          "location": "knowledge/tuning/hyperparameter_tuning.md#51-ajuste-manual",
+          "relevant": false
+        },
+        {
+          "rank": 10,
+          "chunk_id": "a9a8952e83954deaf35c",
+          "path": "knowledge/tuning/hyperparameter_tuning.md",
+          "section": "Ajuste de hiperparámetros\n5. Métodos de búsqueda\n5.4 Otros métodos respaldados por las fuentes",
+          "score": 0.470914,
+          "location": "knowledge/tuning/hyperparameter_tuning.md#54-otros-metodos-respaldados-por-las-fuentes",
+          "relevant": false
+        }
+      ]
+    },
+    {
+      "id": "workflow-evaluation-filtered",
+      "query": "Cómo escoger holdout o validación cruzada y cuándo estratificar para evaluar candidatos",
+      "positive": true,
+      "expected_zero_results": false,
+      "expected_path": "knowledge/workflows/competition_workflow.md",
+      "expected_section": "4.3 Definir la evaluación",
+      "expected_terms": [
+        "holdout",
+        "validación cruzada"
+      ],
+      "filters": {
+        "document_type": "knowledge",
+        "topic": "workflows"
+      },
+      "correct": true,
+      "retrieved_zero_results": false,
+      "zero_results_match_expected": true,
+      "relevant_ranks": [
+        1
+      ],
+      "first_relevant_rank": 1,
+      "reciprocal_rank": 1.0,
+      "recall_at_k": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "observations": "Fragmento relevante en posición 1 de 10.",
+      "diversity_at_k": {
+        "1": {
+          "distinct_sections": 1,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "3": {
+          "distinct_sections": 3,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "5": {
+          "distinct_sections": 5,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "10": {
+          "distinct_sections": 8,
+          "repeated_fragments": 2,
+          "repeated_sections": [
+            {
+              "path": "knowledge/workflows/competition_workflow.md",
+              "section_path": "Flujo de trabajo para competiciones de Machine Learning\n4. Etapas del flujo de trabajo\n4.9 Seleccionar y evaluar la solución final",
+              "count": 2
+            },
+            {
+              "path": "knowledge/workflows/competition_workflow.md",
+              "section_path": "Flujo de trabajo para competiciones de Machine Learning\n8. Implementación mínima del flujo",
+              "count": 2
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "rank": 1,
+          "chunk_id": "a285d572931bb67b52a1",
+          "path": "knowledge/workflows/competition_workflow.md",
+          "section": "Flujo de trabajo para competiciones de Machine Learning\n4. Etapas del flujo de trabajo\n4.3 Definir la evaluación",
+          "score": 0.808179,
+          "location": "knowledge/workflows/competition_workflow.md#43-definir-la-evaluacion",
+          "relevant": true
+        },
+        {
+          "rank": 2,
+          "chunk_id": "cabc1c1ea88b9601da63",
+          "path": "knowledge/workflows/competition_workflow.md",
+          "section": "Flujo de trabajo para competiciones de Machine Learning\n9. Errores frecuentes y riesgos",
+          "score": 0.651982,
+          "location": "knowledge/workflows/competition_workflow.md#9-errores-frecuentes-y-riesgos",
+          "relevant": false
+        },
+        {
+          "rank": 3,
+          "chunk_id": "a6394082dc4a23f64466",
+          "path": "knowledge/workflows/competition_workflow.md",
+          "section": "Flujo de trabajo para competiciones de Machine Learning\n8. Implementación mínima del flujo",
+          "score": 0.350891,
+          "location": "knowledge/workflows/competition_workflow.md#8-implementacion-minima-del-flujo",
+          "relevant": false
+        },
+        {
+          "rank": 4,
+          "chunk_id": "36de542acc33c38b2815",
+          "path": "knowledge/workflows/competition_workflow.md",
+          "section": "Flujo de trabajo para competiciones de Machine Learning\n4. Etapas del flujo de trabajo\n4.6 Entrenar y comparar modelos",
+          "score": 0.340588,
+          "location": "knowledge/workflows/competition_workflow.md#46-entrenar-y-comparar-modelos",
+          "relevant": false
+        },
+        {
+          "rank": 5,
+          "chunk_id": "529bde1370e5e49a486d",
+          "path": "knowledge/workflows/competition_workflow.md",
+          "section": "Flujo de trabajo para competiciones de Machine Learning\n4. Etapas del flujo de trabajo\n4.9 Seleccionar y evaluar la solución final",
+          "score": 0.333348,
+          "location": "knowledge/workflows/competition_workflow.md#49-seleccionar-y-evaluar-la-solucion-final",
+          "relevant": false
+        },
+        {
+          "rank": 6,
+          "chunk_id": "6fe3de2efa71e2a4724d",
+          "path": "knowledge/workflows/competition_workflow.md",
+          "section": "Flujo de trabajo para competiciones de Machine Learning\n2. Principios de trabajo",
+          "score": 0.305715,
+          "location": "knowledge/workflows/competition_workflow.md#2-principios-de-trabajo",
+          "relevant": false
+        },
+        {
+          "rank": 7,
+          "chunk_id": "9468512d47b7b1938674",
+          "path": "knowledge/workflows/competition_workflow.md",
+          "section": "Flujo de trabajo para competiciones de Machine Learning\n3. Vista general del flujo",
+          "score": 0.302498,
+          "location": "knowledge/workflows/competition_workflow.md#3-vista-general-del-flujo",
+          "relevant": false
+        },
+        {
+          "rank": 8,
+          "chunk_id": "ce4ece967f8e111290b4",
+          "path": "knowledge/workflows/competition_workflow.md",
+          "section": "Flujo de trabajo para competiciones de Machine Learning\n4. Etapas del flujo de trabajo\n4.9 Seleccionar y evaluar la solución final",
+          "score": 0.283814,
+          "location": "knowledge/workflows/competition_workflow.md#49-seleccionar-y-evaluar-la-solucion-final",
+          "relevant": false
+        },
+        {
+          "rank": 9,
+          "chunk_id": "8f173070ed48aa12c7e8",
+          "path": "knowledge/workflows/competition_workflow.md",
+          "section": "Flujo de trabajo para competiciones de Machine Learning\n8. Implementación mínima del flujo",
+          "score": 0.274635,
+          "location": "knowledge/workflows/competition_workflow.md#8-implementacion-minima-del-flujo",
+          "relevant": false
+        },
+        {
+          "rank": 10,
+          "chunk_id": "644bf1cff15bc60c1c04",
+          "path": "knowledge/workflows/competition_workflow.md",
+          "section": "Flujo de trabajo para competiciones de Machine Learning\n5. Puntos de decisión y rutas alternativas",
+          "score": 0.267217,
+          "location": "knowledge/workflows/competition_workflow.md#5-puntos-de-decision-y-rutas-alternativas",
+          "relevant": false
+        }
+      ]
+    },
+    {
+      "id": "playbook-baseline-direct",
+      "query": "Pasos para establecer una referencia sencilla y medir cambios en una competición",
+      "positive": true,
+      "expected_zero_results": false,
+      "expected_path": "playbook/competition_workflow.md",
+      "expected_section": "Paso 4. Construir un baseline",
+      "expected_terms": [
+        "baseline",
+        "validación"
+      ],
+      "filters": {
+        "document_type": "playbook"
+      },
+      "correct": true,
+      "retrieved_zero_results": false,
+      "zero_results_match_expected": true,
+      "relevant_ranks": [
+        1
+      ],
+      "first_relevant_rank": 1,
+      "reciprocal_rank": 1.0,
+      "recall_at_k": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "observations": "Fragmento relevante en posición 1 de 10.",
+      "diversity_at_k": {
+        "1": {
+          "distinct_sections": 1,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "3": {
+          "distinct_sections": 3,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "5": {
+          "distinct_sections": 5,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "10": {
+          "distinct_sections": 10,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        }
+      },
+      "results": [
+        {
+          "rank": 1,
+          "chunk_id": "0f9bd9b51c16981355f3",
+          "path": "playbook/competition_workflow.md",
+          "section": "Flujo de trabajo para competencias de Machine Learning\n4. Procedimiento paso a paso\nPaso 4. Construir un baseline",
+          "score": 0.858238,
+          "location": "playbook/competition_workflow.md#paso-4-construir-un-baseline",
+          "relevant": true
+        },
+        {
+          "rank": 2,
+          "chunk_id": "0218a6375512e216d560",
+          "path": "playbook/tabular_classification.md",
+          "section": "Playbook de clasificación tabular\n4. Procedimiento paso a paso\nPaso 4. Preparar un baseline",
+          "score": 0.654361,
+          "location": "playbook/tabular_classification.md#paso-4-preparar-un-baseline",
+          "relevant": false
+        },
+        {
+          "rank": 3,
+          "chunk_id": "8c9e930c4c5e3883c014",
+          "path": "playbook/tabular_regression.md",
+          "section": "Playbook de regresión tabular\n4. Procedimiento paso a paso\nPaso 4. Preparar un baseline",
+          "score": 0.649416,
+          "location": "playbook/tabular_regression.md#paso-4-preparar-un-baseline",
+          "relevant": false
+        },
+        {
+          "rank": 4,
+          "chunk_id": "cbc9b715390ad5d7a8ce",
+          "path": "playbook/tabular_classification.md",
+          "section": "Playbook de clasificación tabular\n8. Comparación de experimentos y registro",
+          "score": 0.549884,
+          "location": "playbook/tabular_classification.md#8-comparacion-de-experimentos-y-registro",
+          "relevant": false
+        },
+        {
+          "rank": 5,
+          "chunk_id": "e7f0354f14959d53f4a2",
+          "path": "playbook/competition_workflow.md",
+          "section": "Flujo de trabajo para competencias de Machine Learning\n4. Procedimiento paso a paso\nPaso 6. Entrenar y comparar modelos",
+          "score": 0.452814,
+          "location": "playbook/competition_workflow.md#paso-6-entrenar-y-comparar-modelos",
+          "relevant": false
+        },
+        {
+          "rank": 6,
+          "chunk_id": "b1b12734d9bda2022178",
+          "path": "playbook/competition_workflow.md",
+          "section": "Flujo de trabajo para competencias de Machine Learning\n4. Procedimiento paso a paso\nPaso 7. Mejorar variables y modelos",
+          "score": 0.374868,
+          "location": "playbook/competition_workflow.md#paso-7-mejorar-variables-y-modelos",
+          "relevant": false
+        },
+        {
+          "rank": 7,
+          "chunk_id": "35a29d8c4306491c3cc2",
+          "path": "playbook/tabular_classification.md",
+          "section": "Playbook de clasificación tabular\n3. Flujo de decisión",
+          "score": 0.361116,
+          "location": "playbook/tabular_classification.md#3-flujo-de-decision",
+          "relevant": false
+        },
+        {
+          "rank": 8,
+          "chunk_id": "ba9e3363f612eec28940",
+          "path": "playbook/competition_workflow.md",
+          "section": "Flujo de trabajo para competencias de Machine Learning\n4. Procedimiento paso a paso\nPaso 5. Preparar datos y prevenir leakage",
+          "score": 0.333232,
+          "location": "playbook/competition_workflow.md#paso-5-preparar-datos-y-prevenir-leakage",
+          "relevant": false
+        },
+        {
+          "rank": 9,
+          "chunk_id": "eedf31dc17f9ea000a60",
+          "path": "playbook/competition_workflow.md",
+          "section": "Flujo de trabajo para competencias de Machine Learning\n4. Procedimiento paso a paso\nPaso 8. Ajustar hiperparámetros",
+          "score": 0.327767,
+          "location": "playbook/competition_workflow.md#paso-8-ajustar-hiperparametros",
+          "relevant": false
+        },
+        {
+          "rank": 10,
+          "chunk_id": "3ef04120065f70c28593",
+          "path": "playbook/tabular_classification.md",
+          "section": "Playbook de clasificación tabular\n6. Baseline mínimo",
+          "score": 0.326262,
+          "location": "playbook/tabular_classification.md#6-baseline-minimo",
+          "relevant": false
+        }
+      ]
+    },
+    {
+      "id": "playbook-classification-imbalance",
+      "query": "Qué hacer cuando una clase domina y accuracy puede resultar engañosa",
+      "positive": true,
+      "expected_zero_results": false,
+      "expected_path": "playbook/tabular_classification.md",
+      "expected_section": "7. Tratamiento del desbalance de clases",
+      "expected_terms": [
+        "Accuracy",
+        "conteos"
+      ],
+      "filters": {
+        "document_type": "playbook"
+      },
+      "correct": true,
+      "retrieved_zero_results": false,
+      "zero_results_match_expected": true,
+      "relevant_ranks": [
+        1
+      ],
+      "first_relevant_rank": 1,
+      "reciprocal_rank": 1.0,
+      "recall_at_k": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "observations": "Fragmento relevante en posición 1 de 10.",
+      "diversity_at_k": {
+        "1": {
+          "distinct_sections": 1,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "3": {
+          "distinct_sections": 3,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "5": {
+          "distinct_sections": 4,
+          "repeated_fragments": 1,
+          "repeated_sections": [
+            {
+              "path": "playbook/tabular_classification.md",
+              "section_path": "Playbook de clasificación tabular\n3. Flujo de decisión",
+              "count": 2
+            }
+          ]
+        },
+        "10": {
+          "distinct_sections": 8,
+          "repeated_fragments": 2,
+          "repeated_sections": [
+            {
+              "path": "playbook/competition_workflow.md",
+              "section_path": "Flujo de trabajo para competencias de Machine Learning\n5. Reglas de decisión",
+              "count": 2
+            },
+            {
+              "path": "playbook/tabular_classification.md",
+              "section_path": "Playbook de clasificación tabular\n3. Flujo de decisión",
+              "count": 2
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "rank": 1,
+          "chunk_id": "a381e85809e006461a1e",
+          "path": "playbook/tabular_classification.md",
+          "section": "Playbook de clasificación tabular\n7. Tratamiento del desbalance de clases",
+          "score": 0.898208,
+          "location": "playbook/tabular_classification.md#7-tratamiento-del-desbalance-de-clases",
+          "relevant": true
+        },
+        {
+          "rank": 2,
+          "chunk_id": "a1f5a4fe25e99d1b7ec9",
+          "path": "playbook/tabular_classification.md",
+          "section": "Playbook de clasificación tabular\n5. Reglas de decisión",
+          "score": 0.464159,
+          "location": "playbook/tabular_classification.md#5-reglas-de-decision",
+          "relevant": false
+        },
+        {
+          "rank": 3,
+          "chunk_id": "48d6a915d2415c59e988",
+          "path": "playbook/tabular_classification.md",
+          "section": "Playbook de clasificación tabular\n3. Flujo de decisión",
+          "score": 0.350988,
+          "location": "playbook/tabular_classification.md#3-flujo-de-decision",
+          "relevant": false
+        },
+        {
+          "rank": 4,
+          "chunk_id": "f7d506bed1e230f5d5c3",
+          "path": "playbook/competition_workflow.md",
+          "section": "Flujo de trabajo para competencias de Machine Learning\n5. Reglas de decisión",
+          "score": 0.309473,
+          "location": "playbook/competition_workflow.md#5-reglas-de-decision",
+          "relevant": false
+        },
+        {
+          "rank": 5,
+          "chunk_id": "7066a6e0167fca4fa161",
+          "path": "playbook/tabular_classification.md",
+          "section": "Playbook de clasificación tabular\n3. Flujo de decisión",
+          "score": 0.285222,
+          "location": "playbook/tabular_classification.md#3-flujo-de-decision",
+          "relevant": false
+        },
+        {
+          "rank": 6,
+          "chunk_id": "cfd78d29866c2a9e8e8d",
+          "path": "playbook/tabular_classification.md",
+          "section": "Playbook de clasificación tabular\n4. Procedimiento paso a paso\nPaso 3. Definir validación y métrica",
+          "score": 0.251442,
+          "location": "playbook/tabular_classification.md#paso-3-definir-validacion-y-metrica",
+          "relevant": false
+        },
+        {
+          "rank": 7,
+          "chunk_id": "5bc80c10507ff31eef87",
+          "path": "playbook/tabular_classification.md",
+          "section": "Playbook de clasificación tabular\n4. Procedimiento paso a paso\nPaso 7. Revisar errores y mejorar el modelo",
+          "score": 0.238262,
+          "location": "playbook/tabular_classification.md#paso-7-revisar-errores-y-mejorar-el-modelo",
+          "relevant": false
+        },
+        {
+          "rank": 8,
+          "chunk_id": "2a3fc62959ed81adbc2c",
+          "path": "playbook/tabular_classification.md",
+          "section": "Playbook de clasificación tabular\n4. Procedimiento paso a paso\nPaso 1. Entender el objetivo de clasificación",
+          "score": 0.236308,
+          "location": "playbook/tabular_classification.md#paso-1-entender-el-objetivo-de-clasificacion",
+          "relevant": false
+        },
+        {
+          "rank": 9,
+          "chunk_id": "aef0c2d16ef8ae1f4ce2",
+          "path": "playbook/competition_workflow.md",
+          "section": "Flujo de trabajo para competencias de Machine Learning\n5. Reglas de decisión",
+          "score": 0.185745,
+          "location": "playbook/competition_workflow.md#5-reglas-de-decision",
+          "relevant": false
+        },
+        {
+          "rank": 10,
+          "chunk_id": "57d05ea0d2fd9d2a27e1",
+          "path": "playbook/tabular_classification.md",
+          "section": "Playbook de clasificación tabular\n10. Riesgos y controles",
+          "score": 0.172585,
+          "location": "playbook/tabular_classification.md#10-riesgos-y-controles",
+          "relevant": false
+        }
+      ]
+    },
+    {
+      "id": "playbook-regression-residuals",
+      "query": "Revisar residuos y predicciones para localizar errores grandes o patrones del modelo de regresión",
+      "positive": true,
+      "expected_zero_results": false,
+      "expected_path": "playbook/tabular_regression.md",
+      "expected_section": "7. Análisis de errores y predicciones",
+      "expected_terms": [
+        "residuo",
+        "predicción"
+      ],
+      "filters": {
+        "document_type": "playbook"
+      },
+      "correct": true,
+      "retrieved_zero_results": false,
+      "zero_results_match_expected": true,
+      "relevant_ranks": [
+        2
+      ],
+      "first_relevant_rank": 2,
+      "reciprocal_rank": 0.5,
+      "recall_at_k": {
+        "1": 0,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "observations": "Fragmento relevante en posición 2 de 10.",
+      "diversity_at_k": {
+        "1": {
+          "distinct_sections": 1,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "3": {
+          "distinct_sections": 3,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "5": {
+          "distinct_sections": 3,
+          "repeated_fragments": 2,
+          "repeated_sections": [
+            {
+              "path": "playbook/tabular_regression.md",
+              "section_path": "Playbook de regresión tabular\n4. Procedimiento paso a paso\nPaso 7. Revisar errores y mejorar el modelo",
+              "count": 2
+            },
+            {
+              "path": "playbook/tabular_regression.md",
+              "section_path": "Playbook de regresión tabular\n7. Análisis de errores y predicciones",
+              "count": 2
+            }
+          ]
+        },
+        "10": {
+          "distinct_sections": 8,
+          "repeated_fragments": 2,
+          "repeated_sections": [
+            {
+              "path": "playbook/tabular_regression.md",
+              "section_path": "Playbook de regresión tabular\n4. Procedimiento paso a paso\nPaso 7. Revisar errores y mejorar el modelo",
+              "count": 2
+            },
+            {
+              "path": "playbook/tabular_regression.md",
+              "section_path": "Playbook de regresión tabular\n7. Análisis de errores y predicciones",
+              "count": 2
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "rank": 1,
+          "chunk_id": "ca640f729a79d7e05156",
+          "path": "playbook/tabular_regression.md",
+          "section": "Playbook de regresión tabular\n4. Procedimiento paso a paso\nPaso 7. Revisar errores y mejorar el modelo",
+          "score": 0.851332,
+          "location": "playbook/tabular_regression.md#paso-7-revisar-errores-y-mejorar-el-modelo",
+          "relevant": false
+        },
+        {
+          "rank": 2,
+          "chunk_id": "e330890ba0a4b4a96e04",
+          "path": "playbook/tabular_regression.md",
+          "section": "Playbook de regresión tabular\n7. Análisis de errores y predicciones",
+          "score": 0.850994,
+          "location": "playbook/tabular_regression.md#7-analisis-de-errores-y-predicciones",
+          "relevant": true
+        },
+        {
+          "rank": 3,
+          "chunk_id": "8ddb27a6df812681e886",
+          "path": "playbook/tabular_regression.md",
+          "section": "Playbook de regresión tabular\n3. Flujo de decisión",
+          "score": 0.660379,
+          "location": "playbook/tabular_regression.md#3-flujo-de-decision",
+          "relevant": false
+        },
+        {
+          "rank": 4,
+          "chunk_id": "ea0037a407dfb3500c0c",
+          "path": "playbook/tabular_regression.md",
+          "section": "Playbook de regresión tabular\n4. Procedimiento paso a paso\nPaso 7. Revisar errores y mejorar el modelo",
+          "score": 0.648818,
+          "location": "playbook/tabular_regression.md#paso-7-revisar-errores-y-mejorar-el-modelo",
+          "relevant": false
+        },
+        {
+          "rank": 5,
+          "chunk_id": "5708583262edfa162572",
+          "path": "playbook/tabular_regression.md",
+          "section": "Playbook de regresión tabular\n7. Análisis de errores y predicciones",
+          "score": 0.61723,
+          "location": "playbook/tabular_regression.md#7-analisis-de-errores-y-predicciones",
+          "relevant": false
+        },
+        {
+          "rank": 6,
+          "chunk_id": "a45ab7b79ca4edc5479d",
+          "path": "playbook/competition_workflow.md",
+          "section": "Flujo de trabajo para competencias de Machine Learning\n5. Reglas de decisión",
+          "score": 0.473807,
+          "location": "playbook/competition_workflow.md#5-reglas-de-decision",
+          "relevant": false
+        },
+        {
+          "rank": 7,
+          "chunk_id": "0f9bd9b51c16981355f3",
+          "path": "playbook/competition_workflow.md",
+          "section": "Flujo de trabajo para competencias de Machine Learning\n4. Procedimiento paso a paso\nPaso 4. Construir un baseline",
+          "score": 0.422358,
+          "location": "playbook/competition_workflow.md#paso-4-construir-un-baseline",
+          "relevant": false
+        },
+        {
+          "rank": 8,
+          "chunk_id": "b1b12734d9bda2022178",
+          "path": "playbook/competition_workflow.md",
+          "section": "Flujo de trabajo para competencias de Machine Learning\n4. Procedimiento paso a paso\nPaso 7. Mejorar variables y modelos",
+          "score": 0.39759,
+          "location": "playbook/competition_workflow.md#paso-7-mejorar-variables-y-modelos",
+          "relevant": false
+        },
+        {
+          "rank": 9,
+          "chunk_id": "e7f0354f14959d53f4a2",
+          "path": "playbook/competition_workflow.md",
+          "section": "Flujo de trabajo para competencias de Machine Learning\n4. Procedimiento paso a paso\nPaso 6. Entrenar y comparar modelos",
+          "score": 0.372565,
+          "location": "playbook/competition_workflow.md#paso-6-entrenar-y-comparar-modelos",
+          "relevant": false
+        },
+        {
+          "rank": 10,
+          "chunk_id": "27dcc31c26e6bbc7ed98",
+          "path": "playbook/competition_workflow.md",
+          "section": "Flujo de trabajo para competencias de Machine Learning\n6. Baseline mínimo",
+          "score": 0.36509,
+          "location": "playbook/competition_workflow.md#6-baseline-minimo",
+          "relevant": false
+        }
+      ]
+    },
+    {
+      "id": "negative-impossible-topic",
+      "query": "validación cruzada K-Fold",
+      "positive": false,
+      "expected_zero_results": true,
+      "expected_path": "",
+      "expected_section": "",
+      "expected_terms": [],
+      "filters": {
+        "document_type": "knowledge",
+        "topic": "topic_inexistente"
+      },
+      "correct": true,
+      "retrieved_zero_results": true,
+      "zero_results_match_expected": true,
+      "relevant_ranks": [],
+      "first_relevant_rank": null,
+      "reciprocal_rank": null,
+      "recall_at_k": null,
+      "observations": "Filtro sin resultados, como se esperaba.",
+      "diversity_at_k": {
+        "1": {
+          "distinct_sections": 0,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "3": {
+          "distinct_sections": 0,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "5": {
+          "distinct_sections": 0,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "10": {
+          "distinct_sections": 0,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        }
+      },
+      "results": []
+    },
+    {
+      "id": "negative-playbook-topic-filter",
+      "query": "construir un baseline para una competencia",
+      "positive": false,
+      "expected_zero_results": true,
+      "expected_path": "",
+      "expected_section": "",
+      "expected_terms": [],
+      "filters": {
+        "document_type": "playbook",
+        "topic": "workflows"
+      },
+      "correct": true,
+      "retrieved_zero_results": true,
+      "zero_results_match_expected": true,
+      "relevant_ranks": [],
+      "first_relevant_rank": null,
+      "reciprocal_rank": null,
+      "recall_at_k": null,
+      "observations": "Filtro sin resultados, como se esperaba.",
+      "diversity_at_k": {
+        "1": {
+          "distinct_sections": 0,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "3": {
+          "distinct_sections": 0,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "5": {
+          "distinct_sections": 0,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        },
+        "10": {
+          "distinct_sections": 0,
+          "repeated_fragments": 0,
+          "repeated_sections": []
+        }
+      },
+      "results": []
+    }
+  ]
+}

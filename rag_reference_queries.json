@@ -1,0 +1,175 @@
+{
+  "ranking_k": [1, 3, 5, 10],
+  "cases": [
+    {
+      "id": "audit-unit-paraphrase",
+      "query": "¿Qué significa cada fila del dataset y cómo influye que una entidad aparezca varias veces?",
+      "expected_path": "knowledge/eda/dataset_audit.md",
+      "expected_section": "3.1 Dimensiones y unidad de observación",
+      "expected_terms": ["fila", "entidad"],
+      "document_type": "knowledge",
+      "topic": "eda"
+    },
+    {
+      "id": "audit-missing-exact",
+      "query": "NaN, centinelas e infinitos al inspeccionar ausencias",
+      "expected_path": "knowledge/eda/dataset_audit.md",
+      "expected_section": "4.1 Valores faltantes",
+      "expected_terms": ["NaN", "centinelas"],
+      "topic": "eda"
+    },
+    {
+      "id": "cleaning-missing-paraphrase",
+      "query": "¿Cómo identificar valores incompletos y qué alternativas como eliminar o interpolar existen?",
+      "expected_path": "knowledge/preprocessing/data_cleaning.md",
+      "expected_section": "4.1 Valores faltantes",
+      "expected_terms": ["eliminación", "interpolación"],
+      "topic": "preprocessing"
+    },
+    {
+      "id": "problem-unit-exact",
+      "query": "unidad de análisis: entidad, evento o intervalo representado por una observación",
+      "expected_path": "knowledge/problem_definition/problem_formulation.md",
+      "expected_section": "4.2 Unidad de análisis",
+      "expected_terms": ["entidad", "target"],
+      "topic": "problem_definition"
+    },
+    {
+      "id": "features-time-paraphrase",
+      "query": "Derivar señales del calendario para aprender patrones recurrentes en registros con fecha",
+      "expected_path": "knowledge/feature_engineering/feature_engineering.md",
+      "expected_section": "4.3 Variables temporales",
+      "expected_terms": ["timestamp", "día de semana"],
+      "topic": "feature_engineering"
+    },
+    {
+      "id": "validation-kfold-direct",
+      "query": "¿Cómo se estima el rendimiento con validación cruzada K-Fold?",
+      "expected_path": "knowledge/validation/validation_strategy.md",
+      "expected_section": "4.2 Validación cruzada K-Fold",
+      "expected_terms": ["K-Fold", "folds"],
+      "topic": "validation"
+    },
+    {
+      "id": "validation-groupkfold-exact",
+      "query": "GroupKFold para mantener juntas entidades relacionadas",
+      "expected_path": "knowledge/validation/validation_strategy.md",
+      "expected_section": "4.6 Datos agrupados o relacionados",
+      "expected_terms": ["GroupKFold", "grupos"],
+      "topic": "validation"
+    },
+    {
+      "id": "leakage-future-paraphrase",
+      "query": "Evitar fuga temporal: ventanas, joins y timestamps deben respetar cuándo hay disponibilidad real de los datos",
+      "expected_path": "knowledge/preprocessing/data_leakage.md",
+      "expected_section": "3.2 Leakage por información futura o no disponible",
+      "expected_terms": ["timestamps", "disponibilidad"],
+      "document_type": "knowledge",
+      "topic": "preprocessing"
+    },
+    {
+      "id": "leakage-signals-exact-filtered",
+      "query": "¿Cómo investigar la procedencia y disponibilidad de variables sospechosas antes de inferencia?",
+      "expected_path": "knowledge/preprocessing/data_leakage.md",
+      "expected_section": "4. Cómo detectar señales de leakage",
+      "expected_terms": ["inferencia", "target"],
+      "document_type": "knowledge",
+      "topic": "preprocessing"
+    },
+    {
+      "id": "classification-confusion-paraphrase",
+      "query": "¿Cómo se interpretan los aciertos y errores de un clasificador según la etiqueta positiva?",
+      "expected_path": "knowledge/metrics/classification_metrics.md",
+      "expected_section": "3. Matriz de confusión",
+      "expected_terms": ["clase positiva", "especificidad"],
+      "topic": "metrics"
+    },
+    {
+      "id": "classification-f1-exact",
+      "query": "F1, precision, recall y media armónica para clasificación",
+      "expected_path": "knowledge/metrics/classification_metrics.md",
+      "expected_section": "4.5 F1 y otras métricas",
+      "expected_terms": ["F1", "precision", "recall"],
+      "topic": "metrics"
+    },
+    {
+      "id": "regression-mae-exact",
+      "query": "MAE error absoluto medio y unidades del objetivo",
+      "expected_path": "knowledge/metrics/regression_metrics.md",
+      "expected_section": "4.1 MAE",
+      "expected_terms": ["MAE", "unidades del objetivo"],
+      "topic": "metrics"
+    },
+    {
+      "id": "models-logistic-direct",
+      "query": "¿Qué modelo lineal estima probabilidades para predecir una clase?",
+      "expected_path": "knowledge/models/tabular_models.md",
+      "expected_section": "3.2 Regresión logística",
+      "expected_terms": ["Regresión logística", "probabilidad"],
+      "topic": "models"
+    },
+    {
+      "id": "ensembles-boosting-exact",
+      "query": "AdaBoost y boosting construyen aprendices secuencialmente",
+      "expected_path": "knowledge/ensembles/boosting_models.md",
+      "expected_section": "3.4 Boosting",
+      "expected_terms": ["AdaBoost", "secuencial"],
+      "topic": "ensembles"
+    },
+    {
+      "id": "tuning-random-search-paraphrase",
+      "query": "Explorar configuraciones al azar con un límite de pruebas en vez de recorrer todas las combinaciones",
+      "expected_path": "knowledge/tuning/hyperparameter_tuning.md",
+      "expected_section": "5.3 Búsqueda aleatoria",
+      "expected_terms": ["n_iter", "presupuesto"],
+      "topic": "tuning"
+    },
+    {
+      "id": "workflow-evaluation-filtered",
+      "query": "Cómo escoger holdout o validación cruzada y cuándo estratificar para evaluar candidatos",
+      "expected_path": "knowledge/workflows/competition_workflow.md",
+      "expected_section": "4.3 Definir la evaluación",
+      "expected_terms": ["holdout", "validación cruzada"],
+      "document_type": "knowledge",
+      "topic": "workflows"
+    },
+    {
+      "id": "playbook-baseline-direct",
+      "query": "Pasos para establecer una referencia sencilla y medir cambios en una competición",
+      "expected_path": "playbook/competition_workflow.md",
+      "expected_section": "Paso 4. Construir un baseline",
+      "expected_terms": ["baseline", "validación"],
+      "document_type": "playbook"
+    },
+    {
+      "id": "playbook-classification-imbalance",
+      "query": "Qué hacer cuando una clase domina y accuracy puede resultar engañosa",
+      "expected_path": "playbook/tabular_classification.md",
+      "expected_section": "7. Tratamiento del desbalance de clases",
+      "expected_terms": ["Accuracy", "conteos"],
+      "document_type": "playbook"
+    },
+    {
+      "id": "playbook-regression-residuals",
+      "query": "Revisar residuos y predicciones para localizar errores grandes o patrones del modelo de regresión",
+      "expected_path": "playbook/tabular_regression.md",
+      "expected_section": "7. Análisis de errores y predicciones",
+      "expected_terms": ["residuo", "predicción"],
+      "document_type": "playbook"
+    },
+    {
+      "id": "negative-impossible-topic",
+      "query": "validación cruzada K-Fold",
+      "document_type": "knowledge",
+      "topic": "topic_inexistente",
+      "expected_zero_results": true
+    },
+    {
+      "id": "negative-playbook-topic-filter",
+      "query": "construir un baseline para una competencia",
+      "document_type": "playbook",
+      "topic": "workflows",
+      "expected_zero_results": true
+    }
+  ]
+}

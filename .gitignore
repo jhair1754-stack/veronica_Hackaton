@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+.venv/
+.veronica/
+tmp/
+.env
+.env.*
+!.env.example
+
+# Extracted book text kept as a local working file, not application source.
+chapter.txt
