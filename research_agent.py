@@ -24,6 +24,7 @@ from typing import Any, Protocol
 import numpy as np
 
 import rag_mvp
+import decision_contract
 
 ROOT = Path(__file__).resolve().parent
 ARTIFACT_ROOT = ROOT / ".veronica" / "research_runs"
@@ -207,6 +208,7 @@ class ResearchRequest:
     observation_structure: str = "unknown"
     cv_folds: int | None = None
     max_cv_fits: int | None = None
+    decisions: dict[str, Any] | None = None
 
 
 @dataclass
@@ -221,6 +223,8 @@ class ColumnReviewSignal:
     review_question: str
     data_scope: dict[str, Any]
     limitation: str = "Señal heurística: no confirma error ni leakage y no excluye ni transforma la columna."
+    signal_id: str = ""
+    review_required: bool = False
 
 
 @dataclass
@@ -257,9 +261,10 @@ class ResearchResult:
     errors: list[str] = field(default_factory=list)
     split_diagnostics: dict[str, Any] | None = None
     model_comparison: dict[str, Any] | None = None
+    decision_contract: dict[str, Any] | None = None
 
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        return {**asdict(self), "review_summary": _review_summary(self)}
 
 
 class Retriever(Protocol):
@@ -390,8 +395,12 @@ def _missing(value: str | None) -> bool:
 def _review_signal(column: str, kind: str, rule: str, description: str,
                    evidence: dict[str, Any], why: str, question: str,
                    scope: dict[str, Any], status: str = "review_recommended") -> dict[str, Any]:
-    return asdict(ColumnReviewSignal(column, kind, status, rule, description,
-                                     evidence, why, question, scope))
+    signal = ColumnReviewSignal(column, kind, status, rule, description,
+                                evidence, why, question, scope)
+    signal.signal_id = "signal-v1-" + hashlib.sha256(json.dumps(
+        [column, rule], ensure_ascii=False).encode("utf-8")).hexdigest()
+    signal.review_required = kind == "possible_target_proxy" and status != "not_evaluable"
+    return asdict(signal)
 
 
 def _date_parse(value: str, explicit_format: str | None = None) -> tuple[bool, bool]:
@@ -594,7 +603,10 @@ def _target_relation_signals(rows: list[dict[str, str]], columns: list[str], tar
     signals: list[dict[str, Any]] = []
     n = len(train_indices)
     scope = {"data_scope": "train_only", "split_strategy": split_strategy,
-             "training_rows": n}
+             "training_rows": n, "training_row_indices": list(train_indices),
+             "row_index_convention": "zero_based_data_rows_excluding_header",
+             "training_index_sha256": hashlib.sha256(json.dumps(train_indices).encode()).hexdigest(),
+             "purpose": "preliminary_review_holdout_not_final_evaluation"}
     target_tokens = {"target", "label", "outcome", "result", "post", "after", "response",
                      "objetivo", "resultado", "posterior"}
     if n < TARGET_PROXY_MIN_TRAIN:
@@ -1107,11 +1119,29 @@ def _candidate_prediction(candidate_id: str, task_type: str, x_train: np.ndarray
 
 def run_model_comparison(request: ResearchRequest, audit: DatasetAudit,
                          rows: list[dict[str, str]]) -> dict[str, Any]:
+    result, current_audit, current_rows = _training_preflight(request)
+    if result.status != "completed":
+        raise ValueError("; ".join(result.errors or result.next_actions or [result.summary]))
+    if rows != current_rows or audit.dataset_sha256 != current_audit.dataset_sha256:
+        raise ValueError("Los datos Python no corresponden al CSV actual; vuelva a auditar.")
+    return _run_model_comparison(request, current_audit, current_rows)
+
+
+def _run_model_comparison(request: ResearchRequest, audit: DatasetAudit,
+                          rows: list[dict[str, str]]) -> dict[str, Any]:
     """Compare a constant reference and the existing linear model on shared splits."""
+    review = prepare_predictor_review(request, audit, rows)
+    features = review["effective_predictors"]
+    issues, _ = validate_semantic_decisions(request, audit, features)
+    issues.extend(review["issues"])
+    if issues:
+        raise ValueError("; ".join(issues))
     target = str(request.target)
     classification = request.task_type == TASK
     labels = [row[target].strip() for row in rows] if classification else None
-    classes = sorted(set(labels or []))
+    positive = ((request.decisions or {}).get("positive_class") or "").strip()
+    classes = ([next(label for label in set(labels) if label != positive), positive]
+               if classification else [])
     split_cache: dict[int, list[tuple[list[int], list[int]]]] = {}
     effective, fold_count, notes = _validation_choice(request, audit, labels, rows, split_cache)
     if effective == "cross_validation":
@@ -1139,7 +1169,6 @@ def run_model_comparison(request: ResearchRequest, audit: DatasetAudit,
             if len({rows[index][target] for index in valid_indices}) <= 1:
                 raise ValueError(f"R² no está definido en el fold {fold_number}: el target de validación es constante. Elija MAE/RMSE o revise el split.")
 
-    features = [column for column in audit.column_names if column != target]
     candidate_specs = [
         {"id": "constant", "name": "Predictor constante", "family": "constant",
          "task": request.task_type, "parameters": {"strategy": "most_frequent" if classification else "mean"}, "complexity": 0},
@@ -1148,7 +1177,7 @@ def run_model_comparison(request: ResearchRequest, audit: DatasetAudit,
          "parameters": ({"learning_rate": 0.1, "iterations": 600, "l2": 0.01, "threshold": 0.5}
                          if classification else {"alpha": 1.0, "fit_intercept": True}), "complexity": 1},
     ]
-    state = {spec["id"]: {**spec, "preprocessing": "numeric median imputation + standardization; categorical train mode + one-hot; fitted per train partition",
+    state = {spec["id"]: {**spec, "predictor_columns": features, "preprocessing": "numeric median imputation + standardization; categorical train mode + one-hot; fitted per train partition",
                            "folds": [], "errors": [], "fit_count": 0, "elapsed_seconds": 0.0}
              for spec in candidate_specs}
     partitions = []
@@ -1250,11 +1279,13 @@ def run_model_comparison(request: ResearchRequest, audit: DatasetAudit,
         "seed": request.seed, "metric": request.metric, "score": linear_score,
         "model": "numpy_logistic_regression_l2" if classification else "numpy_ridge_regression",
         "parameters": candidate_specs[1]["parameters"], "predictor_columns": features,
+        "candidate_predictors": review["candidate_predictors"], "excluded_predictors": review["excluded_predictors"],
         "encoded_columns": encoded_columns, "target_excluded": target not in features,
         "warnings": [comparison["warning"]], "environment": {"python": platform.python_version(), "numpy": np.__version__},
         "validation": linear_validation, "model_comparison": comparison}
     if classification:
         baseline.update({"classes": classes,
+            "positive_class": positive, "class_mapping": {classes[0]: 0, classes[1]: 1},
             "train_class_counts": {c: sum(labels[i] == c for i in train_indices) for c in classes},
             "test_class_counts": {c: sum(labels[i] == c for i in valid_indices) for c in classes}})
     return {"baseline": baseline, "comparison": comparison}
@@ -1340,6 +1371,22 @@ def validate_plan(plan: dict[str, Any], request: ResearchRequest,
 
 def _md(result: ResearchResult) -> str:
     lines = ["# Informe de investigación VERONICA", "", f"**Estado:** {result.status}", "", result.summary]
+    lines += ["", "## Resumen de revisión", "```json",
+              json.dumps(_review_summary(result), ensure_ascii=False, indent=2), "```",
+              "Las métricas, cuando existen, son preliminares. No existe una reserva final independiente para evaluar el modelo seleccionado."]
+    if result.decision_contract is not None:
+        contract = result.decision_contract
+        lines += ["", "## Decisiones semánticas", "Las decisiones registradas se validan antes del entrenamiento.",
+                  f"- Versión: {contract['schema_version']}.",
+                  f"- Configuración SHA-256: `{contract['configuration_sha256']}`.",
+                  "- Pendientes: " + (", ".join(contract['pending_decisions']) or "ninguno registrado; revisión global pendiente") + "."]
+        if contract.get("metric_decision"):
+            lines.append("- Decisión de métrica: " + json.dumps(contract["metric_decision"], ensure_ascii=False))
+        for limitation in contract.get("signal_evaluation_limitations", []):
+            lines.append("- Análisis pendiente: " + limitation)
+    if result.baseline and result.baseline.get("class_mapping"):
+        lines += ["", "## Clase positiva", f"- Etiqueta: `{result.baseline['positive_class']}`.",
+                  "- Mapeo: " + json.dumps(result.baseline["class_mapping"], ensure_ascii=False) + "."]
     if result.dataset_audit:
         a = result.dataset_audit
         lines += ["", "## Auditoría", f"- Filas: {a['rows']}; columnas: {a['columns']}; duplicados: {a['duplicate_rows']}."]
@@ -1359,12 +1406,23 @@ def _md(result: ResearchResult) -> str:
             for signal in signals:
                 evidence_text = (json.dumps(signal["evidence"], ensure_ascii=False, sort_keys=True)
                                  + f"; alcance={json.dumps(signal['data_scope'], ensure_ascii=False, sort_keys=True)}; {signal['limitation']}").replace("|", "\\|")
-                cells = [signal["column_name"], f"{signal['signal_type']} — {signal['rule_id']} ({signal['status']}): {signal['rule_description']}",
+                cells = [signal["column_name"], f"{signal['signal_type']} — {signal['rule_id']} ({signal['status']}): {signal['rule_description']}; referencia={signal['signal_id']}; respuesta requerida={signal['review_required']}",
                          evidence_text, signal["why_review"], signal["review_question"]]
                 lines.append("| " + " | ".join(" ".join(str(cell).split()).replace("|", "\\|") for cell in cells) + " |")
         else:
             lines.append("- No se generaron señales de columnas.")
-        lines.append(f"- Checklist humana: `{a.get('human_review', {'status': 'pending'})}`")
+        review = a.get('human_review', {'status': 'pending'})
+        lines.append(f"- Revisión humana: `{review['status']}`.")
+        if 'effective_predictors' in review:
+            lines += [f"- Candidatas: {review['candidate_predictors']}.",
+                      f"- Excluidas: {review['excluded_predictors']}; motivos: {review['exclusion_reasons']}.",
+                      f"- Predictores efectivos: {review['effective_predictors']}.",
+                      f"- Columnas de partición (independientes del uso predictivo): {review['partition_columns']}.",
+                      review['limitation']]
+            for response in review['responses']:
+                lines.append("- Respuesta humana: " + json.dumps(response, ensure_ascii=False))
+            for resolution in review['signal_resolutions']:
+                lines.append(f"- {resolution['signal_id']}: {resolution['resolution']}.")
     if result.plan:
         lines += ["", "## Plan", f"- Modelo: {result.plan['model']}; validación: {result.plan['validation']}.", f"- Métrica: {result.plan['metric']} — {result.plan['metric_reason']}", f"- Preprocesamiento: {result.plan['preprocessing']}.", f"- Semilla: {result.plan['seed']}."]
         selection = result.plan.get("metric_selection")
@@ -1481,34 +1539,22 @@ def _md(result: ResearchResult) -> str:
 
 def run_research(request: ResearchRequest, *, retriever: Retriever | None = None,
                  planner: Planner | None = None) -> ResearchResult:
-    if request.metric is not None and request.metric.lower() != request.metric:
-        request = replace(request, metric=request.metric.lower())
-    issues = validate_request(request)
-    if issues:
-        status = "unsupported" if (request.task_type not in TASK_METRICS or request.split_strategy not in {"random", "group", "time"} or (request.metric and request.task_type in TASK_METRICS and request.metric not in TASK_METRICS[request.task_type]) or any("No se admite combinar" in issue or issue.startswith("unsupported:") for issue in issues)) else "needs_input"
-        return ResearchResult(status, "La solicitud necesita corrección antes de ejecutar el baseline.", errors=issues,
-                              split_diagnostics=_unverified_split_diagnostics(request, issues))
-    try:
-        audit, rows = audit_dataset(str(request.csv_path), str(request.target), str(request.task_type), request.time_format)
-    except Exception as exc:
-        error = str(exc)
-        return ResearchResult("failed", "No se pudo auditar el dataset; no se entrenó ningún modelo.", errors=[error],
-                              split_diagnostics=_unverified_split_diagnostics(request, [error]))
+    decision_audit, audit, rows = _training_preflight(request)
+    if decision_audit.status != "completed":
+        return decision_audit
+    review = audit.human_review
+    metric_decision = decision_audit.decision_contract["metric_decision"]
     retriever = retriever or rag_mvp.search
     planner = planner or DeterministicPlanner()
     evidence = _retrieve(retriever, request)
     plan = planner.plan(request, audit, evidence)
+    plan["metric_decision"] = metric_decision
     try:
         if not validate_plan(plan, request, evidence):
             raise ValueError("El plan no coincide con la solicitud o cita fragmentos fuera del contexto recuperado.")
         selected_metric = plan["metric"]
         effective_request = replace(request, metric=selected_metric)
-        labels = [row[str(request.target)].strip() for row in rows] if request.task_type == TASK else None
-        train_indices, _, audit_split = _split_indices(effective_request, rows, labels)
-        audit.column_review_signals.extend(_target_relation_signals(
-            rows, audit.column_names, str(request.target), str(request.task_type),
-            train_indices, audit_split["strategy"]))
-        baseline = run_baseline(effective_request, audit, rows)
+        baseline = _run_model_comparison(effective_request, audit, rows)["baseline"]
         if (not baseline["target_excluded"] or (baseline["score"] is not None and not math.isfinite(float(baseline["score"])))
                 or baseline["metric"] != selected_metric or baseline["seed"] != request.seed
                 or baseline.get("task_type", TASK) != request.task_type
@@ -1537,16 +1583,19 @@ def run_research(request: ResearchRequest, *, retriever: Retriever | None = None
         audit_payload.update({"target": request.target, "task_type": request.task_type,
                               "score_computed": False,
                               "predictor_columns_before_audit": [c for c in audit.column_names if c != request.target],
-                              "predictor_columns_after_audit": [c for c in audit.column_names if c != request.target]})
+                              "predictor_columns_after_audit": review["effective_predictors"],
+                              "excluded_predictor_columns": review["excluded_predictors"]})
         return ResearchResult("failed", "La ejecución no superó la revisión de validez.", audit_payload, plan,
-                              errors=[error], evidence=evidence, split_diagnostics=diagnostics)
+                              errors=[error], evidence=evidence, split_diagnostics=diagnostics,
+                              decision_contract=decision_audit.decision_contract)
     target_stats = asdict(audit)
     target_stats["target"] = request.target
     target_stats["task_type"] = request.task_type
     target_stats["predictor_columns_before_audit"] = [c for c in audit.column_names if c != request.target]
     target_stats["predictor_columns_after_audit"] = list(baseline["predictor_columns"])
-    if target_stats["predictor_columns_before_audit"] != target_stats["predictor_columns_after_audit"]:
-        raise ValueError("La auditoría no debe modificar los predictores usados por el baseline.")
+    target_stats["excluded_predictor_columns"] = review["excluded_predictors"]
+    if target_stats["predictor_columns_after_audit"] != review["effective_predictors"]:
+        raise ValueError("El baseline no coincide con los predictores revisados.")
     risk_assessment = build_risk_assessment(request.task_type, audit, baseline)
     plan["risk_assessment"] = risk_assessment
     score_label = baseline["metric"]
@@ -1569,10 +1618,18 @@ def run_research(request: ResearchRequest, *, retriever: Retriever | None = None
                           risk_assessment=risk_assessment,
                           next_actions=["Revisar el significado de cada predictor y cualquier señal heurística."],
                           split_diagnostics=baseline["split_diagnostics"],
-                          model_comparison=baseline["model_comparison"])
+                          model_comparison=baseline["model_comparison"],
+                          decision_contract=decision_audit.decision_contract)
 
 
 def save_result(result: ResearchResult, request: ResearchRequest, output_dir: str | Path | None = None) -> tuple[Path, Path]:
+    if result.status != "completed" and (result.baseline is not None or result.model_comparison is not None):
+        raise ValueError("Un informe bloqueado no puede contener métricas ni comparaciones anteriores.")
+    if result.decision_contract is None:
+        result.decision_contract = {"schema_version": 1,
+            "configuration": {k: getattr(request, k) for k in decision_contract.CONFIG_TYPES},
+            "configuration_sha256": _canonical_hash({k: getattr(request, k) for k in decision_contract.CONFIG_TYPES}),
+            "pending_decisions": result.errors.copy(), "review_status": "needs_input"}
     destination = Path(output_dir) if output_dir else ARTIFACT_ROOT / datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     destination.mkdir(parents=True, exist_ok=True)
     metadata = {"schema_version": 3,
@@ -1622,35 +1679,366 @@ def validate_report_consistency(result: ResearchResult, payload: dict[str, Any],
             and str(data["baseline"]["seed"]) in markdown)
 
 
+def merge_decisions(request: ResearchRequest, data: dict[str, Any],
+                    explicit_fields: set[str]) -> ResearchRequest:
+    """Reuse ResearchRequest as the sole owner of configuration values."""
+    decision_contract.validate_contract(data)
+    config = data.get("configuration", {})
+    changes = {}
+    for key, value in config.items():
+        if value is None:
+            continue
+        current = getattr(request, key)
+        equal = current == value
+        if key == "csv_path" and current:
+            equal = Path(current).resolve() == Path(value).resolve()
+        if key in explicit_fields and not equal:
+            raise ValueError(f"Conflicto entre JSON y CLI: {key}")
+        changes[key] = value
+    declarations = {key for key, value in config.items() if value is not None} | explicit_fields
+    supplemental = {key: value for key, value in data.items() if key != "configuration"}
+    supplemental["declared_fields"] = sorted(declarations)
+    return replace(request, **changes, decisions=supplemental)
+
+
+def prepare_predictor_review(request: ResearchRequest, audit: DatasetAudit,
+                             rows: list[dict[str, str]]) -> dict[str, Any]:
+    """Resolve once per dataset/configuration; retain raw rows for partitioning."""
+    context = hashlib.sha256(json.dumps([asdict(request), audit.dataset_sha256],
+        sort_keys=True, ensure_ascii=False).encode()).hexdigest()
+    if audit.human_review.get("review_context_sha256") == context:
+        return audit.human_review
+    decisions = request.decisions or {"schema_version": 1}
+    decision_contract.validate_contract({k: v for k, v in decisions.items() if k != "declared_fields"})
+    candidates = [column for column in audit.column_names if column != request.target]
+    for key in ("predictor_availability", "excluded_columns"):
+        unknown = decisions.get(key, {}).keys() - set(candidates)
+        if unknown:
+            raise ValueError(f"{key}: columnas desconocidas o target: {sorted(unknown)}")
+    # Recompute only the existing preliminary train scope, never validation/test.
+    audit.column_review_signals = [s for s in audit.column_review_signals
+                                  if s["data_scope"]["data_scope"] != "train_only"]
+    limitations = validate_request(replace(request, metric=request.metric or
+                                   ("mae" if request.task_type == REGRESSION else "f1")))
+    if "split_strategy" not in decisions.get("declared_fields", []) or request.observation_structure == "unknown":
+        limitations.append("Pendiente: declare split_strategy y observation_structure para analizar relaciones predictor-target solo en train.")
+    if not limitations:
+        try:
+            labels = [row[request.target].strip() for row in rows] if request.task_type == TASK else None
+            train, _, split = _split_indices(request, rows, labels)
+            audit.column_review_signals.extend(_target_relation_signals(
+                rows, audit.column_names, request.target, request.task_type, train, split["strategy"]))
+        except ValueError as exc:
+            limitations = [str(exc)]
+    signals = audit.column_review_signals
+    responses = decisions.get("responses", [])
+    by_column: dict[str, dict[str, Any]] = {}
+    by_signal: dict[str, dict[str, Any]] = {}
+    for response in responses:
+        column, rule, ref = response["column_name"], response.get("rule_id"), response.get("signal_id")
+        if column not in candidates:
+            raise ValueError(f"responses: columna inexistente o target {column!r}; el target nunca es predictor.")
+        if rule or ref:
+            matches = [s for s in signals if s["column_name"] == column and
+                       (not rule or s["rule_id"] == rule) and (not ref or s["signal_id"] == ref)]
+            if len(matches) != 1:
+                raise ValueError(f"responses: señal desconocida, no evaluada o referencia contradictoria para {column!r}.")
+            ref = matches[0]["signal_id"]
+            if ref in by_signal:
+                raise ValueError(f"responses: respuesta duplicada para {ref}.")
+            by_signal[ref] = response
+        else:
+            by_column[column] = response
+    exclusions = dict(decisions.get("excluded_columns", {}))
+    for column in exclusions:
+        if column not in candidates:
+            raise ValueError(f"excluded_columns: columna inexistente o target {column!r}.")
+    for response in responses:
+        if response["decision"] == "exclude":
+            column = response["column_name"]
+            if response.get("reason"):
+                exclusions[column] = response["reason"]
+            else:
+                exclusions.setdefault(column, None)
+    issues = []
+    for column, reason in exclusions.items():
+        if not isinstance(reason, str) or not reason.strip():
+            issues.append(f"Justifique la exclusión de {column!r} antes de resolverla.")
+    excluded = [c for c in candidates if exclusions.get(c)]
+    effective = [c for c in candidates if c not in excluded]
+    if not effective:
+        issues.append("No quedan predictores utilizables: revise las exclusiones; el target nunca es predictor.")
+    for response in responses:
+        if response["decision"] != "pending" and not response.get("reason"):
+            issues.append(f"Justifique la decisión de {response['column_name']!r}.")
+        if response["decision"] == "keep" and any(s["column_name"] == response["column_name"] for s in signals):
+            if not response.get("column_meaning"):
+                issues.append(f"Explique column_meaning de {response['column_name']!r} para conservar una columna señalada.")
+            if decisions.get("predictor_availability", {}).get(response["column_name"]) != "available":
+                issues.append(f"Conservar {response['column_name']!r} requiere disponibilidad available explícita; una confirmación genérica no basta.")
+    resolutions = []
+    for signal in signals:
+        column, ref = signal["column_name"], signal["signal_id"]
+        response = by_signal.get(ref, by_column.get(column))
+        state = "informational"
+        if column in excluded:
+            state = "excluded"
+        elif response and response["decision"] == "keep" and response.get("reason") and response.get("column_meaning") and decisions.get("predictor_availability", {}).get(column) == "available":
+            state = "kept"
+        elif signal["review_required"]:
+            state = "pending"
+            issues.append(f"Resuelva la señal requerida {ref} ({column}/{signal['rule_id']}) con exclusión justificada o significado y disponibilidad confirmados.")
+        resolutions.append({"signal_id": ref, "column_name": column,
+                            "required": signal["review_required"], "resolution": state})
+    audit.human_review = {
+        "status": "pending" if issues or limitations else "resolved" if responses or excluded else "not_required", "policy_version": 1,
+        "review_context_sha256": context, "responses": responses,
+        "candidate_predictors": candidates, "excluded_predictors": excluded,
+        "exclusion_reasons": exclusions, "effective_predictors": effective,
+        "signal_resolutions": resolutions, "issues": issues,
+        "signal_evaluation_limitations": limitations,
+        "partition_columns": [c for c in (request.group_column, request.time_column) if c],
+        "limitation": "La revisión usa datos de desarrollo; no convierte el score en evaluación final independiente.",
+    }
+    return audit.human_review
+
+
+def validate_semantic_decisions(request: ResearchRequest, audit: DatasetAudit,
+                                predictors: list[str] | None = None) -> tuple[list[str], dict[str, Any]]:
+    """Training requirements; never infer declarations from observed values."""
+    decisions = request.decisions or {}
+    issues = list(validate_request(request))
+    for key in ("row_meaning", "prediction_scenario", "metric_reason"):
+        value = decisions.get(key)
+        if not isinstance(value, str) or not value.strip():
+            issues.append(f"Declare {key} con una justificación no vacía antes de entrenar.")
+    if request.observation_structure == "unknown":
+        issues.append("Declare observation_structure: independent, grouped o temporal; no se infiere independencia.")
+    declared = decisions.get("declared_fields", [])
+    if "split_strategy" not in declared:
+        issues.append("Confirme split_strategy explícitamente; no se inventa un protocolo aleatorio.")
+    positive = decisions.get("positive_class")
+    if request.task_type == TASK:
+        if not isinstance(positive, str) or positive.strip() not in audit.target_distribution:
+            issues.append(f"Declare positive_class entre las clases observadas {list(audit.target_distribution)}; se eliminan espacios exteriores.")
+        if len(audit.target_distribution) != 2:
+            issues.append("Corrija el target: clasificación binaria requiere exactamente dos clases válidas.")
+    elif positive is not None:
+        issues.append("Quite positive_class: no corresponde a regresión.")
+    for column in (predictors if predictors is not None else audit.column_names):
+        if column != request.target and decisions.get("predictor_availability", {}).get(column) != "available":
+            issues.append(f"Confirme disponibilidad de {column!r} en el escenario de predicción; no puede entrenarse como disponible.")
+    selection = select_regression_metric(request) if request.task_type == REGRESSION else {
+        "selected_metric": request.metric or "f1", "selection_source": "user_explicit" if request.metric else "classification_default",
+        "rationale": "Métrica solicitada." if request.metric else "F1 predeterminada: recomendación aún sin confirmar."}
+    confirmed = bool(request.metric and "metric" in declared and
+                     isinstance(decisions.get("metric_reason"), str) and decisions["metric_reason"].strip())
+    if not confirmed:
+        issues.append("Confirme metric y metric_reason explícitamente; una recomendación automática no autoriza entrenamiento.")
+    metric_decision = {"effective_metric": selection["selected_metric"],
+                       "status": "confirmed" if confirmed else "recommendation",
+                       "selection_source": selection["selection_source"],
+                       "recommendation_reason": selection["rationale"],
+                       "human_reason": decisions.get("metric_reason")}
+    return issues, metric_decision
+
+
+def _audit_decisions(request: ResearchRequest, snapshot=None) -> ResearchResult:
+    decisions = dict(request.decisions or {})
+    declared = decisions.pop("declared_fields", [])
+    configuration = {key: getattr(request, key) for key in decision_contract.CONFIG_TYPES}
+    contract = {**decisions, "configuration": configuration, "declared_fields": declared,
+                "pending_decisions": [], "observed_dataset_sha256": None,
+                "configuration_sha256": hashlib.sha256(json.dumps(configuration, sort_keys=True,
+                    ensure_ascii=False, allow_nan=False).encode("utf-8")).hexdigest()}
+    pending = contract["pending_decisions"]
+    for key in ("task_type", "target", "metric", "observation_structure"):
+        if key not in declared or getattr(request, key) in (None, "unknown"):
+            pending.append(key)
+    for key in ("row_meaning", "prediction_scenario", "metric_reason", "dataset_sha256"):
+        if not decisions.get(key):
+            pending.append(key)
+    if request.task_type == TASK and not decisions.get("positive_class"):
+        pending.append("positive_class")
+    # Validate syntax independently of the legacy training feasibility rules.
+    try:
+        decision_contract.validate_contract({key: value for key, value in contract.items()
+            if key not in {"declared_fields", "pending_decisions", "observed_dataset_sha256", "configuration_sha256"}})
+        if not request.csv_path or not request.target or "task_type" not in declared:
+            return ResearchResult("needs_input", "Indique CSV, target y tarea para auditar.", decision_contract=contract)
+        audit, rows = snapshot if snapshot is not None else audit_dataset(request.csv_path, request.target, request.task_type, request.time_format)
+        contract["observed_dataset_sha256"] = audit.dataset_sha256
+
+        relevant = {k: v for k, v in configuration.items() if k != "csv_path"}
+        config_hash = _canonical_hash(relevant)
+        submitted = decisions.get("review_binding")
+        stale = bool(submitted and (submitted["dataset_sha256"] != audit.dataset_sha256 or
+                                    submitted["configuration_sha256"] != config_hash))
+        if request.metric and request.metric not in TASK_METRICS[request.task_type]:
+            raise ValueError("Métrica incompatible con la tarea")
+        positive = decisions.get("positive_class")
+        positive = positive.strip() if isinstance(positive, str) else positive
+        if not stale and positive is not None and (request.task_type != TASK or positive not in audit.target_distribution):
+            raise ValueError(f"Corrija positive_class: use una de {list(audit.target_distribution)} para clasificación, o elimínela para regresión.")
+        predictors = set(audit.column_names) - {request.target}
+        for key in ("predictor_availability", "excluded_columns"):
+            unknown = decisions.get(key, {}).keys() - predictors
+            if unknown and not stale:
+                raise ValueError(f"{key}: columnas desconocidas o target: {sorted(unknown)}")
+        for key in ("group_column", "time_column"):
+            if getattr(request, key) and getattr(request, key) not in predictors:
+                raise ValueError(f"{key}: la columna no existe o es el target; seleccione un predictor válido")
+        review_request = request
+        if stale:
+            review_request = replace(request, decisions={**(request.decisions or {}), "responses": [], "excluded_columns": {},
+                "predictor_availability": {c: "unknown" for c in predictors}})
+        review = prepare_predictor_review(review_request, audit, rows)
+        current_binding = {"dataset_sha256": audit.dataset_sha256, "configuration_sha256": config_hash,
+                           "signals_sha256": _canonical_hash(audit.column_review_signals)}
+        contract["current_review_binding"] = current_binding
+        binding_issues = []
+        if not submitted or submitted != current_binding or decisions.get("dataset_sha256") != audit.dataset_sha256:
+            binding_issues.append("Vuelva a auditar y genere una plantilla nueva: falta vincular las decisiones al CSV/configuración/señales actuales o la revisión quedó obsoleta.")
+        contract["binding_status"] = "stale" if submitted and binding_issues else "missing" if binding_issues else "current"
+        contract["invalidated_confirmations"] = (["positive_class", "row_meaning", "prediction_scenario",
+            "metric_reason", "predictor_availability", "excluded_columns", "responses"]
+            if contract["binding_status"] == "stale" else [])
+        if contract["binding_status"] == "stale":
+            review["status"] = "pending"
+            for resolution in review["signal_resolutions"]:
+                resolution["resolution"] = "invalidated"
+
+        contract["signal_evaluation_limitations"] = review["signal_evaluation_limitations"]
+        pending.extend(review["issues"])
+        for column, reason in review["exclusion_reasons"].items():
+            if not reason:
+                pending.append(f"excluded_columns.{column}.reason")
+        for column in review["effective_predictors"]:
+            if decisions.get("predictor_availability", {}).get(column, "unknown") != "available":
+                pending.append(f"predictor_availability.{column}")
+        semantic_issues, metric_decision = validate_semantic_decisions(request, audit, review["effective_predictors"])
+        semantic_issues.extend(review["issues"] + binding_issues)
+        contract["semantic_issues"] = semantic_issues
+        contract["metric_decision"] = metric_decision
+        if contract["binding_status"] == "stale":
+            metric_decision["status"] = "requires_review"
+        contract["pending_decisions"] = list(dict.fromkeys(pending + semantic_issues))
+        contract["review_status"] = "needs_input" if contract["pending_decisions"] else "ready"
+        return ResearchResult("completed", "Auditoría completada; decisiones pendientes registradas. No se calculó ningún score ni se entrenó un modelo.",
+                              dataset_audit={**asdict(audit), "target": request.target,
+                                  "task_type": request.task_type, "score_computed": False,
+                                  "predictor_columns_before_audit": review["candidate_predictors"],
+                                  "predictor_columns_after_audit": review["effective_predictors"],
+                                  "excluded_predictor_columns": review["excluded_predictors"]}, decision_contract=contract)
+    except (ValueError, OSError) as exc:
+        return ResearchResult("failed", "Contrato o CSV inválido; no se entrenó.",
+                              errors=[str(exc)], decision_contract=contract)
+
+
+def _review_summary(result: ResearchResult) -> dict[str, Any]:
+    contract = result.decision_contract or {}
+    config = contract.get("configuration", {})
+    audit = result.dataset_audit or {}
+    review = audit.get("human_review", {})
+    positive = contract.get("positive_class")
+    positive = positive.strip() if isinstance(positive, str) else None
+    classes = audit.get("target_distribution", {})
+    mapping = {label: int(label == positive) for label in classes} if positive in classes and len(classes) == 2 else None
+    return {"execution_status": result.status, "review_status": contract.get("review_status", "needs_input"),
+        "pending_decisions": list(dict.fromkeys(contract.get("pending_decisions", []) + result.errors)),
+        "next_actions": result.next_actions,
+        "row_meaning": contract.get("row_meaning"), "prediction_scenario": contract.get("prediction_scenario"),
+        "positive_class": positive, "class_mapping": mapping,
+        "metric": contract.get("metric_decision", {"effective_metric": config.get("metric"), "human_reason": contract.get("metric_reason")}),
+        "predictor_availability": contract.get("predictor_availability", {}),
+        "exclusions": review.get("exclusion_reasons", contract.get("excluded_columns", {})),
+        "effective_predictors": review.get("effective_predictors", []),
+        "requested_protocol": {k: config.get(k) for k in ("split_strategy", "validation_strategy", "group_column", "time_column", "test_size", "seed", "cv_folds", "observation_structure")},
+        "effective_protocol": result.baseline.get("validation") if result.baseline else None,
+        "dataset_sha256": audit.get("dataset_sha256", contract.get("observed_dataset_sha256")),
+        "contract_version": contract.get("schema_version"), "binding_status": contract.get("binding_status", "missing"),
+        "invalidated_confirmations": contract.get("invalidated_confirmations", []),
+        "review_binding": contract.get("review_binding"), "current_review_binding": contract.get("current_review_binding"),
+        "final_independent_evaluation": False}
+
+
+def _canonical_hash(value: Any) -> str:
+    return hashlib.sha256(json.dumps(value, sort_keys=True, ensure_ascii=False,
+                                    allow_nan=False).encode("utf-8")).hexdigest()
+
+
+def _training_preflight(request: ResearchRequest):
+    """Only public training gate: fresh CSV, fresh review, no trusted cached audit."""
+    try:
+        decision_contract.validate_contract({"schema_version": 1,
+            "configuration": {k: getattr(request, k) for k in decision_contract.CONFIG_TYPES}})
+    except (ValueError, TypeError) as exc:
+        # Preserve the established needs_input status for malformed numeric protocol values.
+        unsupported = isinstance(request.task_type, str) and request.task_type not in TASK_METRICS
+        return ResearchResult("unsupported" if unsupported else "needs_input", "Corrija el formato de la solicitud antes de entrenar.",
+                              errors=[str(exc)], next_actions=[str(exc)]), None, None
+    issues = validate_request(request)
+    unsupported = request.task_type not in TASK_METRICS or any(
+        i.startswith("unsupported:") or "No se admite combinar" in i or "Métrica incompatible" in i for i in issues)
+    try:
+        # Validation precedes execution; a fresh audit is shared with the runner.
+        snapshot = audit_dataset(request.csv_path, request.target, request.task_type, request.time_format) if request.csv_path and request.target and request.task_type in TASK_METRICS else None
+        inspection_request = request if request.decisions is not None else replace(request,
+            decisions={"schema_version": 1, "declared_fields": ["csv_path", "target", "task_type"]})
+        result = _audit_decisions(inspection_request, snapshot)
+        if issues:
+            result.status = "unsupported" if unsupported else "needs_input"
+            result.errors = issues
+            result.next_actions = issues.copy()
+            return result, None, None
+        if result.status == "failed":
+            return result, None, None
+        pending = list(dict.fromkeys(issues + (result.decision_contract or {}).get("pending_decisions", [])))
+        if result.status != "completed" or pending:
+            result.status = "unsupported" if unsupported else "needs_input"
+            result.summary = "Solicitud bloqueada: complete las decisiones y vuelva a validar; no se entrenó ni se calcularon métricas."
+            result.errors = pending or [result.summary]
+            result.next_actions = result.errors.copy()
+            return result, None, None
+        return result, snapshot[0], snapshot[1]
+    except (ValueError, OSError, TypeError) as exc:
+        return ResearchResult(("unsupported" if unsupported else "needs_input") if issues else "failed", "No se pudo validar la solicitud; no se entrenó.", errors=issues or [str(exc)],
+                              next_actions=["Corrija el CSV o contrato indicado y vuelva a auditar."]), None, None
+
+
+def write_decisions_template(request: ResearchRequest, result: ResearchResult, path: str | Path) -> None:
+    """Exclusive creation: never replace an existing reviewed or pending file."""
+    if not result.dataset_audit or not result.decision_contract.get("current_review_binding"):
+        raise ValueError("La plantilla requiere una auditoría válida; corrija CSV, target y tarea.")
+    data = {"schema_version": 1,
+            "configuration": result.decision_contract["configuration"],
+            "dataset_sha256": result.dataset_audit["dataset_sha256"],
+            "review_binding": result.decision_contract["current_review_binding"],
+            "positive_class": None, "row_meaning": None, "prediction_scenario": None,
+            "metric_reason": None, "excluded_columns": {},
+            "predictor_availability": {c: "unknown" for c in result.dataset_audit["column_names"] if c != request.target},
+            "responses": [{"column_name": s["column_name"], "signal_id": s["signal_id"],
+                           "rule_id": s["rule_id"], "decision": "pending", "reason": None,
+                           "column_meaning": None} for s in result.dataset_audit["column_review_signals"]
+                          if s["column_name"] != request.target]}
+    with Path(path).open("x", encoding="utf-8") as stream:
+        json.dump(data, stream, ensure_ascii=False, indent=2)
+
+
 def run_audit_only(request: ResearchRequest) -> ResearchResult:
     """Run dataset checks and train-only heuristics without retrieval or model fitting."""
-    validation_request = replace(request, metric=request.metric or ("mae" if request.task_type == REGRESSION else "f1"))
-    issues = validate_request(validation_request)
-    if issues:
-        return ResearchResult("needs_input", "La auditoría necesita una solicitud válida.", errors=issues)
-    try:
-        audit, rows = audit_dataset(str(request.csv_path), str(request.target), str(request.task_type), request.time_format)
-        labels = [row[str(request.target)].strip() for row in rows] if request.task_type == TASK else None
-        train_indices, _, split = _split_indices(validation_request, rows, labels)
-        audit.column_review_signals.extend(_target_relation_signals(
-            rows, audit.column_names, str(request.target), str(request.task_type),
-            train_indices, split["strategy"]))
-    except Exception as exc:
-        return ResearchResult("failed", "No se pudo completar la auditoría; no se entrenó ningún modelo.",
-                              errors=[str(exc)])
-    payload = asdict(audit)
-    payload.update({"target": request.target, "task_type": request.task_type,
-                    "score_computed": False,
-                    "predictor_columns_before_audit": [c for c in audit.column_names if c != request.target],
-                    "predictor_columns_after_audit": [c for c in audit.column_names if c != request.target]})
-    return ResearchResult("completed", "Auditoría completada. No se calculó ningún score ni se entrenó un modelo.",
-                          dataset_audit=payload, split_diagnostics=split)
+    if request.decisions is None:
+        # Legacy audit arguments describe inspection, not human confirmations.
+        request = replace(request, decisions={"schema_version": 1, "declared_fields": ["task_type", "target", "csv_path"]})
+    return _audit_decisions(request)
 
 
 def main(argv: list[str] | None = None) -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
-    parser = argparse.ArgumentParser(description="Agente local VERONICA para clasificación binaria y regresión tabular")
+    parser = argparse.ArgumentParser(description="Agente local VERONICA para clasificación binaria y regresión tabular", allow_abbrev=False)
+    parser.add_argument("--write-decisions-template", help="Audita y crea una plantilla pendiente; nunca sobrescribe un archivo existente.")
+    parser.add_argument("--decisions-json", help="Contrato v1: decisiones semánticas obligatorias para entrenar; --audit-only admite pendientes. Conflictos explícitos con CLI son errores.")
     parser.add_argument("--csv", dest="csv_path")
     parser.add_argument("--target")
     parser.add_argument("--task", dest="task_type", default=TASK)
@@ -1680,7 +2068,32 @@ def main(argv: list[str] | None = None) -> int:
                               args.group_column, args.time_column, args.test_size, args.time_format,
                               args.validation_strategy, args.observation_structure,
                               args.cv_folds, args.max_cv_fits)
-    result = run_audit_only(request) if args.audit_only else run_research(request)
+    if args.decisions_json:
+        tokens = sys.argv[1:] if argv is None else argv
+        explicit = {action.dest for action in parser._actions
+                    if any(token.split("=", 1)[0] in action.option_strings for token in tokens)}
+        try:
+            request = merge_decisions(request, decision_contract.load_contract(args.decisions_json),
+                                      explicit & decision_contract.CONFIG_TYPES.keys())
+        except (ValueError, OSError) as exc:
+            print(f"Contrato inválido: {exc}", file=sys.stderr)
+            save_result(ResearchResult("failed", "Contrato inválido; no se entrenó ni se calcularon métricas.",
+                                       errors=[str(exc)], next_actions=["Corrija el JSON o sus conflictos con CLI."]), request, args.output_dir)
+            return 1
+    if not args.decisions_json and (args.audit_only or args.write_decisions_template):
+        tokens = sys.argv[1:] if argv is None else argv
+        explicit = {action.dest for action in parser._actions if any(token.split("=", 1)[0] in action.option_strings for token in tokens)}
+        request = merge_decisions(request, {"schema_version": 1}, explicit & decision_contract.CONFIG_TYPES.keys())
+    result = run_audit_only(request) if args.audit_only or args.write_decisions_template else run_research(request)
+    if args.write_decisions_template:
+        try:
+            write_decisions_template(request, result, args.write_decisions_template)
+        except (ValueError, OSError) as exc:
+            print(f"No se creó la plantilla: {exc}", file=sys.stderr)
+            save_result(ResearchResult("failed", "No se creó la plantilla; no se entrenó.",
+                                       errors=[str(exc)], next_actions=["Elija un archivo de plantilla nuevo; conserve la revisión existente."]),
+                        request, args.output_dir)
+            return 1
     try:
         json_path, md_path = save_result(result, request, args.output_dir)
         print(_md(result))

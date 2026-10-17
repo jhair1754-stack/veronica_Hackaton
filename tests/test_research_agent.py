@@ -11,6 +11,29 @@ from unittest import mock
 from pathlib import Path
 
 import research_agent as agent
+from decision_fixtures import bind_decisions
+
+
+def explicit_request(*args, **kwargs):
+    """Explicit synthetic-domain declarations for existing training fixtures."""
+    positive_class = kwargs.pop('positive_class', 'yes')
+    kwargs.setdefault('observation_structure', 'independent')
+    request = agent.ResearchRequest(*args, **kwargs)
+    columns = []
+    if request.csv_path and Path(request.csv_path).is_file():
+        with Path(request.csv_path).open(encoding='utf-8') as stream:
+            columns = next(csv.reader(stream), [])
+    request.decisions = {
+        'schema_version': 1,
+        'declared_fields': ['task_type', 'target', 'csv_path', 'metric', 'split_strategy', 'observation_structure'],
+        'positive_class': positive_class if request.task_type == agent.TASK else None,
+        'row_meaning': 'Una observación sintética de prueba',
+        'prediction_scenario': 'Antes de medir el resultado sintético',
+        'metric_reason': 'Métrica explícita del escenario de prueba',
+        'predictor_availability': {c: 'available' for c in columns if c != request.target},
+        'responses': [{'column_name': c, 'decision': 'keep', 'reason': 'Entrada del generador sintético conocida antes del resultado', 'column_meaning': f'Variable sintética {c} de este caso de prueba'} for c in columns if c != request.target],
+    }
+    return bind_decisions(request)
 
 
 def make_csv(path: Path, n: int = 60) -> Path:
@@ -34,22 +57,22 @@ def make_regression_csv(path: Path, n: int = 60) -> Path:
 
 class RequestAndAuditTests(unittest.TestCase):
     def test_request_validation_and_statuses(self):
-        request = agent.ResearchRequest(None, None)
+        request = explicit_request(None, None)
         self.assertGreaterEqual(len(agent.validate_request(request)), 2)
-        bad_task = agent.ResearchRequest("x.csv", "y", "multiclass", "accuracy")
+        bad_task = explicit_request("x.csv", "y", "multiclass", "accuracy")
         self.assertEqual(agent.run_research(bad_task).status, "unsupported")
-        self.assertEqual(agent.run_research(agent.ResearchRequest("x.csv", "y", metric="mae")).status, "unsupported")
-        self.assertEqual(agent.run_research(agent.ResearchRequest(None, "y")).status, "needs_input")
+        self.assertEqual(agent.run_research(explicit_request("x.csv", "y", metric="mae")).status, "unsupported")
+        self.assertEqual(agent.run_research(explicit_request(None, "y")).status, "needs_input")
 
     def test_regression_request_and_metric_compatibility(self):
         with tempfile.TemporaryDirectory() as folder:
             path = make_regression_csv(Path(folder) / "data.csv")
-            request = agent.ResearchRequest(str(path), "target", "regression", "mae")
+            request = explicit_request(str(path), "target", "regression", "mae")
             self.assertEqual(agent.validate_request(request), [])
-            bad = agent.ResearchRequest(str(path), "target", "regression", "f1")
+            bad = explicit_request(str(path), "target", "regression", "f1")
             self.assertTrue(any("incompatible" in issue for issue in agent.validate_request(bad)))
             self.assertEqual(agent.run_research(bad).status, "unsupported")
-            explicit_time = agent.ResearchRequest(str(path), "target", "regression", "rmse", context="time_column=date")
+            explicit_time = explicit_request(str(path), "target", "regression", "rmse", context="time_column=date")
             result = agent.run_research(explicit_time)
             self.assertEqual(result.status, "completed")
             self.assertEqual(result.baseline["split_strategy"], "random_holdout")
@@ -94,13 +117,13 @@ class RequestAndAuditTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder) / "input.csv"
             path.write_text("", encoding="utf-8")
-            self.assertEqual(agent.run_research(agent.ResearchRequest(str(path), "y", "regression", "mae")).status, "failed")
+            self.assertEqual(agent.run_research(explicit_request(str(path), "y", "regression", "mae")).status, "failed")
             path.write_text("x,value\n1,2\n", encoding="utf-8")
-            missing = agent.run_research(agent.ResearchRequest(str(path), "y", "regression", "mae"))
+            missing = agent.run_research(explicit_request(str(path), "y", "regression", "mae"))
             self.assertEqual(missing.status, "failed")
             self.assertIn("No existe la columna objetivo", missing.errors[0])
             path.write_text("x,y\n1,bad\n2,3\n", encoding="utf-8")
-            invalid = agent.run_research(agent.ResearchRequest(str(path), "y", "regression", "mae"))
+            invalid = agent.run_research(explicit_request(str(path), "y", "regression", "mae"))
             self.assertEqual(invalid.status, "failed")
 
 
@@ -109,7 +132,7 @@ class BaselineTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             path = make_csv(Path(folder) / "synthetic.csv")
             audit, rows = agent.audit_dataset(path, "target")
-            request = agent.ResearchRequest(str(path), "target", metric="accuracy")
+            request = explicit_request(str(path), "target", metric="accuracy")
             result = agent.run_baseline(request, audit, rows)
             self.assertNotIn("target", result["predictor_columns"])
             self.assertTrue(result["target_excluded"])
@@ -142,7 +165,7 @@ class BaselineTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             path = make_regression_csv(Path(folder) / "data.csv")
             audit, rows = agent.audit_dataset(path, "target", "regression")
-            request = agent.ResearchRequest(str(path), "target", "regression", "mae", 123)
+            request = explicit_request(str(path), "target", "regression", "mae", 123)
             first = agent.run_baseline(request, audit, rows)
             second = agent.run_baseline(request, audit, rows)
             self.assertNotIn("target", first["predictor_columns"])
@@ -157,7 +180,7 @@ class IntegrationTests(unittest.TestCase):
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
         self.path = make_csv(Path(self.temporary.name) / "synthetic.csv")
-        self.request = agent.ResearchRequest(str(self.path), "target", seed=123, metric="f1")
+        self.request = explicit_request(str(self.path), "target", seed=123, metric="f1")
 
     def test_complete_flow_saves_json_markdown_and_repeats(self):
         evidence = {"chunk_id": "local-1", "source_path": "knowledge/metrics/classification_metrics.md",
@@ -200,13 +223,13 @@ class IntegrationTests(unittest.TestCase):
     def test_failed_execution_for_class_with_single_example(self):
         path = Path(self.temporary.name) / "rare.csv"
         path.write_text("x,target\n1,a\n2,a\n3,a\n4,b\n", encoding="utf-8")
-        result = agent.run_research(agent.ResearchRequest(str(path), "target"), retriever=lambda *a, **k: [])
+        result = agent.run_research(explicit_request(str(path), "target", metric="f1", positive_class="a"), retriever=lambda *a, **k: [])
         self.assertEqual(result.status, "failed")
         self.assertIn("al menos 2 filas", result.errors[0])
 
     def test_regression_complete_flow_retrieval_artifacts_and_repeatability(self):
         path = make_regression_csv(Path(self.temporary.name) / "continuous.csv")
-        request = agent.ResearchRequest(str(path), "target", "regression", "rmse", 77)
+        request = explicit_request(str(path), "target", "regression", "rmse", 77)
         metric = {"chunk_id": "reg-metric", "source_path": "knowledge/metrics/regression_metrics.md", "section_path": "MAE", "text": "MAE resume error absoluto.", "score": 0.6}
         validation = {"chunk_id": "validation", "source_path": "knowledge/validation/validation_strategy.md", "section_path": "Holdout", "text": "Separar validación.", "score": 0.7}
         fake = lambda *a, **k: [metric, validation]
@@ -234,7 +257,7 @@ class IntegrationTests(unittest.TestCase):
             # Dataset where seeded holdout contains a constant-valued subset.
             rows = ["x,target"] + [f"{i},1" for i in range(9)] + ["9,2"]
             path.write_text("\n".join(rows), encoding="utf-8")
-            result = agent.run_research(agent.ResearchRequest(str(path), "target", "regression", "r2", 42), retriever=lambda *a, **k: [])
+            result = agent.run_research(explicit_request(str(path), "target", "regression", "r2", 42), retriever=lambda *a, **k: [])
             self.assertIn(result.status, {"failed", "completed"})
             if result.status == "failed":
                 self.assertIn("R² no está definido", result.errors[0])
@@ -258,33 +281,33 @@ class RegressionMetricSelectionTests(unittest.TestCase):
                     "variance_explanation": "r2"}
         for objective, metric in expected.items():
             with self.subTest(objective=objective):
-                selection = agent.select_regression_metric(agent.ResearchRequest(
+                selection = agent.select_regression_metric(explicit_request(
                     "data.csv", "target", "regression", metric_context=objective))
                 self.assertEqual(selection["selected_metric"], metric)
                 self.assertEqual(selection["selection_source"], "structured_context")
-        r2 = agent.select_regression_metric(agent.ResearchRequest(
+        r2 = agent.select_regression_metric(explicit_request(
             "data.csv", "target", "regression", metric_context="variance_explanation"))
         self.assertIn("negativo", r2["rationale"])
         self.assertIn("magnitud", r2["rationale"])
 
     def test_explicit_metric_wins_and_conflict_is_visible(self):
-        selection = agent.select_regression_metric(agent.ResearchRequest(
+        selection = agent.select_regression_metric(explicit_request(
             "data.csv", "target", "regression", "mae", metric_context="large_errors_cost_more"))
         self.assertEqual(selection["selected_metric"], "mae")
         self.assertEqual(selection["selection_source"], "user_explicit")
         self.assertTrue(any("se conserva MAE" in item for item in selection["tradeoffs"]))
 
     def test_missing_objective_needs_input_and_free_context_does_not_select(self):
-        request = agent.ResearchRequest("data.csv", "target", "regression", context="Me preocupan mucho los errores grandes")
+        request = explicit_request("data.csv", "target", "regression", context="Me preocupan mucho los errores grandes")
         self.assertIsNone(agent.select_regression_metric(request)["selected_metric"])
         self.assertTrue(any("needs_input" in issue for issue in agent.validate_request(request)))
 
     def test_official_metric_and_relative_objective_report_limitations(self):
-        official = agent.ResearchRequest("data.csv", "target", "regression", metric_context="official_metric")
-        relative = agent.ResearchRequest("data.csv", "target", "regression", metric_context="relative_error")
+        official = explicit_request("data.csv", "target", "regression", metric_context="official_metric")
+        relative = explicit_request("data.csv", "target", "regression", metric_context="relative_error")
         self.assertIn("métrica oficial", agent.select_regression_metric(official)["rationale"])
         self.assertIn("no hay una métrica relativa", agent.select_regression_metric(relative)["rationale"])
-        unsupported = agent.ResearchRequest("data.csv", "target", "regression", "mape", metric_context="official_metric")
+        unsupported = explicit_request("data.csv", "target", "regression", "mape", metric_context="official_metric")
         self.assertIn("no está soportada", agent.select_regression_metric(unsupported)["rationale"])
 
     def test_metric_property_citations_are_retrieved_evidence_only(self):
@@ -292,7 +315,7 @@ class RegressionMetricSelectionTests(unittest.TestCase):
                   "text": "RMSE da mayor peso relativo a errores grandes y menor es mejor."}
         unrelated = {"chunk_id": "other", "source_path": "knowledge/metrics/regression_metrics.md",
                      "text": "Métrica de regresión."}
-        selection = agent.select_regression_metric(agent.ResearchRequest(
+        selection = agent.select_regression_metric(explicit_request(
             "data.csv", "target", "regression", metric_context="large_errors_cost_more"), [metric, unrelated])
         self.assertEqual(selection["evidence_chunk_ids"], ["rmse-property"])
         self.assertNotIn("other", selection["evidence_chunk_ids"])
@@ -333,7 +356,7 @@ class RegressionMetricSelectionTests(unittest.TestCase):
                 {"chunk_id": "validation", "source_path": "knowledge/validation/validation_strategy.md", "section_path": "Holdout",
                  "text": "Un holdout mide el resultado de una partición."},
             ]
-            request = agent.ResearchRequest(str(path), "target", "regression", metric_context="large_errors_cost_more")
+            request = explicit_request(str(path), "target", "regression", metric="rmse", metric_context="large_errors_cost_more")
             result = agent.run_research(request, retriever=lambda *a, **k: evidence)
             self.assertEqual(result.status, "completed")
             self.assertNotIn("desequilibrio de clases", " ".join(result.risks).casefold())
@@ -359,14 +382,14 @@ class ModelComparisonTests(unittest.TestCase):
     def test_binary_and_regression_include_constant_and_linear_candidates(self):
         with tempfile.TemporaryDirectory() as folder:
             binary_path = make_csv(Path(folder) / "binary.csv")
-            binary = agent.run_research(agent.ResearchRequest(str(binary_path), "target", metric="f1"),
+            binary = agent.run_research(explicit_request(str(binary_path), "target", metric="f1"),
                                         retriever=lambda *a, **k: [])
             self.assertEqual(binary.status, "completed", binary.errors)
             candidates = binary.model_comparison["candidates"]
             self.assertEqual([candidate["id"] for candidate in candidates], ["constant", "linear"])
             self.assertTrue(all(candidate["summary"] and candidate["fit_count"] == 1 for candidate in candidates))
             regression_path = make_regression_csv(Path(folder) / "regression.csv")
-            regression = agent.run_research(agent.ResearchRequest(str(regression_path), "target", "regression", "mae"),
+            regression = agent.run_research(explicit_request(str(regression_path), "target", "regression", "mae"),
                                             retriever=lambda *a, **k: [])
             self.assertEqual(regression.status, "completed", regression.errors)
             self.assertEqual([candidate["family"] for candidate in regression.model_comparison["candidates"]],
@@ -376,7 +399,7 @@ class ModelComparisonTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             path = make_csv(Path(folder) / "data.csv")
             audit, rows = agent.audit_dataset(path, "target")
-            request = agent.ResearchRequest(str(path), "target", metric="f1", seed=17,
+            request = explicit_request(str(path), "target", metric="f1", seed=17,
                 validation_strategy="cross_validation", observation_structure="independent")
             original = agent._kfold_indices
             with mock.patch.object(agent, "_kfold_indices", wraps=original) as splitter:
@@ -394,7 +417,7 @@ class ModelComparisonTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             path = make_regression_csv(Path(folder) / "data.csv")
             audit, rows = agent.audit_dataset(path, "target", "regression")
-            request = agent.ResearchRequest(str(path), "target", "regression", "mae", seed=8)
+            request = explicit_request(str(path), "target", "regression", "mae", seed=8)
             original = agent._encode
             observed = []
             def recording_encode(dataset, features, types, train, indices):
@@ -417,7 +440,7 @@ class ModelComparisonTests(unittest.TestCase):
                 writer = csv.writer(stream); writer.writerow(["x", "target"])
                 writer.writerows([[i, "no" if i < 18 else "yes"] for i in range(20)])
             audit, rows = agent.audit_dataset(path, "target")
-            request = agent.ResearchRequest(str(path), "target", metric="recall")
+            request = explicit_request(str(path), "target", metric="recall")
             original = agent._candidate_prediction
             def prediction(candidate_id, task_type, x_train, x_valid, y_train, classes):
                 return ([0] * len(x_valid)) if candidate_id == "constant" else ([1] * len(x_valid))
@@ -425,6 +448,7 @@ class ModelComparisonTests(unittest.TestCase):
                 recall = agent.run_model_comparison(request, audit, rows)["comparison"]
             self.assertEqual(recall["selected_candidate_id"], "linear")
             request.metric = "accuracy"
+            bind_decisions(request)
             with mock.patch.object(agent, "_candidate_prediction", side_effect=prediction):
                 accuracy = agent.run_model_comparison(request, audit, rows)["comparison"]
             self.assertEqual(accuracy["selected_candidate_id"], "constant")
@@ -433,7 +457,7 @@ class ModelComparisonTests(unittest.TestCase):
             with mock.patch.object(agent, "_candidate_prediction", side_effect=tied):
                 tie = agent.run_model_comparison(request, audit, rows)["comparison"]
             self.assertEqual(tie["selected_candidate_id"], "constant")
-            request = agent.ResearchRequest(str(path), "target", metric="f1", validation_strategy="cross_validation",
+            request = explicit_request(str(path), "target", metric="f1", validation_strategy="cross_validation",
                 observation_structure="independent", cv_folds=2, max_cv_fits=2)
             linear_calls = 0
             def fail_one(candidate_id, task_type, x_train, x_valid, y_train, classes):
@@ -454,7 +478,7 @@ class ModelComparisonTests(unittest.TestCase):
     def test_json_markdown_consistency_and_validation_limitations(self):
         with tempfile.TemporaryDirectory() as folder:
             path = make_csv(Path(folder) / "data.csv")
-            request = agent.ResearchRequest(str(path), "target", metric="f1")
+            request = explicit_request(str(path), "target", metric="f1")
             result = agent.run_research(request, retriever=lambda *a, **k: [])
             with tempfile.TemporaryDirectory() as output:
                 json_path, md_path = agent.save_result(result, request, output)
@@ -471,7 +495,7 @@ class ModelComparisonTests(unittest.TestCase):
     def test_total_linear_failure_is_retained_in_artifacts_without_winner(self):
         with tempfile.TemporaryDirectory() as folder:
             path = make_csv(Path(folder) / "data.csv")
-            request = agent.ResearchRequest(str(path), "target", metric="f1")
+            request = explicit_request(str(path), "target", metric="f1")
             original = agent._candidate_prediction
             def fail_linear(candidate_id, task_type, x_train, x_valid, y_train, classes):
                 if candidate_id == "linear":
@@ -519,9 +543,9 @@ class ExplicitSplitTests(unittest.TestCase):
     def test_group_request_and_invalid_values(self):
         with tempfile.TemporaryDirectory() as folder:
             path = self._write(Path(folder) / "g.csv", ["x", "entity", "target"], self._group_rows())
-            omitted = agent.ResearchRequest(str(path), "target", "binary_classification", "f1", split_strategy="group")
+            omitted = explicit_request(str(path), "target", "binary_classification", "f1", split_strategy="group")
             self.assertEqual(agent.run_research(omitted).status, "needs_input")
-            missing = agent.ResearchRequest(str(path), "target", "binary_classification", "f1", split_strategy="group", group_column="absent")
+            missing = explicit_request(str(path), "target", "binary_classification", "f1", split_strategy="group", group_column="absent")
             result = agent.run_research(missing, retriever=lambda *a, **k: [])
             self.assertEqual(result.status, "failed"); self.assertIn("no existe", result.errors[0])
             with self.assertRaisesRegex(ValueError, "vacíos o nulos"):
@@ -534,7 +558,7 @@ class ExplicitSplitTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             rows = [[i, "positive", "yes"] for i in range(10)] + [[i + 20, "negative", "no"] for i in range(10)]
             path = self._write(Path(folder) / "classes.csv", ["x", "entity", "target"], rows)
-            req = agent.ResearchRequest(str(path), "target", "binary_classification", "f1", 2,
+            req = explicit_request(str(path), "target", "binary_classification", "f1", 2,
                 split_strategy="group", group_column="entity", test_size=.5)
             result = agent.run_research(req, retriever=lambda *a, **k: [])
             self.assertEqual(result.status, "failed"); self.assertIn("entrenamiento sin clases", result.errors[0])
@@ -542,7 +566,7 @@ class ExplicitSplitTests(unittest.TestCase):
     def test_group_end_to_end_artifacts_and_score_reproducibility(self):
         with tempfile.TemporaryDirectory() as folder:
             path = self._write(Path(folder) / "groups.csv", ["signal", "entity", "target"], self._group_rows())
-            req = agent.ResearchRequest(str(path), "target", "binary_classification", "f1", 42,
+            req = explicit_request(str(path), "target", "binary_classification", "f1", 42,
                 split_strategy="group", group_column="entity", test_size=.25)
             one = agent.run_research(req, retriever=lambda *a, **k: [])
             two = agent.run_research(req, retriever=lambda *a, **k: [])
@@ -561,7 +585,7 @@ class ExplicitSplitTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             rows = [[g * 20 + i, f"account-{g}", (g * 20 + i) * 1.25] for g in range(8) for i in range(5)]
             path = self._write(Path(folder) / "group-regression.csv", ["x", "account", "target"], rows)
-            req = agent.ResearchRequest(str(path), "target", "regression", "rmse", 8,
+            req = explicit_request(str(path), "target", "regression", "rmse", 8,
                 split_strategy="group", group_column="account", test_size=.25)
             result = agent.run_research(req, retriever=lambda *a, **k: [])
             self.assertEqual(result.status, "completed", result.errors)
@@ -584,9 +608,9 @@ class ExplicitSplitTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             rows = [[i, f"2024-01-{i + 1:02d}", float(i * i + 1)] for i in range(24)]
             path = self._write(Path(folder) / "time.csv", ["x", "when", "target"], rows)
-            omitted = agent.ResearchRequest(str(path), "target", "regression", "mae", split_strategy="time")
+            omitted = explicit_request(str(path), "target", "regression", "mae", split_strategy="time")
             self.assertEqual(agent.run_research(omitted).status, "needs_input")
-            missing = agent.ResearchRequest(str(path), "target", "regression", "mae", split_strategy="time", time_column="absent")
+            missing = explicit_request(str(path), "target", "regression", "mae", split_strategy="time", time_column="absent")
             self.assertIn("no existe", agent.run_research(missing, retriever=lambda *a, **k: []).errors[0])
             bad = [{"t": "01/02/2024"}, {"t": "02/02/2024"}]
             with self.assertRaisesRegex(ValueError, "ambigua"):
@@ -604,13 +628,13 @@ class ExplicitSplitTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             class_rows = [[i, f"2024-01-{i+1:02d}", ("a" if i % 2 == 0 else "b") if i < 14 else "a"] for i in range(20)]
             class_path = self._write(Path(folder) / "class.csv", ["x", "when", "target"], class_rows)
-            req = agent.ResearchRequest(str(class_path), "target", "binary_classification", "balanced_accuracy", 42,
+            req = explicit_request(str(class_path), "target", "binary_classification", "balanced_accuracy", 42, positive_class="a",
                 split_strategy="time", time_column="when", test_size=.2)
             failed = agent.run_research(req, retriever=lambda *a, **k: [])
             self.assertEqual(failed.status, "failed"); self.assertIn("balanced_accuracy no es calculable", failed.errors[0])
             rows = [[i, f"2024-01-{i+1:02d}", float(i * i + 1)] for i in range(24)]
             path = self._write(Path(folder) / "reg.csv", ["x", "when", "target"], rows)
-            req = agent.ResearchRequest(str(path), "target", "regression", "rmse", 42,
+            req = explicit_request(str(path), "target", "regression", "rmse", 42,
                 split_strategy="time", time_column="when", test_size=.25)
             one = agent.run_research(req, retriever=lambda *a, **k: []); two = agent.run_research(req, retriever=lambda *a, **k: [])
             self.assertEqual(one.status, "completed", one.errors)
@@ -622,22 +646,22 @@ class ExplicitSplitTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             rows = [[i, f"g{i % 4}", f"2024-01-{i+1:02d}", i * 2.0] for i in range(20)]
             path = self._write(Path(folder) / "named.csv", ["id", "group", "date", "target"], rows)
-            request = agent.ResearchRequest(str(path), "target", "regression", "mae")
+            request = explicit_request(str(path), "target", "regression", "mae")
             result = agent.run_research(request, retriever=lambda *a, **k: [])
             self.assertEqual(result.baseline["split_strategy"], "random_holdout")
-            bad_size = agent.ResearchRequest(str(path), "target", "regression", "mae", test_size=1.0)
+            bad_size = explicit_request(str(path), "target", "regression", "mae", test_size=1.0)
             self.assertTrue(any("test_size" in issue for issue in agent.validate_request(bad_size)))
-            incomplete = agent.ResearchRequest(str(path), "target", "regression", "mae", split_strategy="group")
+            incomplete = explicit_request(str(path), "target", "regression", "mae", split_strategy="group")
             self.assertEqual(agent.run_research(incomplete).status, "needs_input")
             constant_group = self._write(Path(folder) / "constant.csv", ["x", "entity", "target"], [[i, "same", i] for i in range(20)])
-            impossible = agent.ResearchRequest(str(constant_group), "target", "regression", "mae", split_strategy="group", group_column="entity")
+            impossible = explicit_request(str(constant_group), "target", "regression", "mae", split_strategy="group", group_column="entity")
             impossible_result = agent.run_research(impossible, retriever=lambda *a, **k: [])
             self.assertEqual(impossible_result.status, "failed")
             self.assertTrue(any("grupos distintos" in error for error in impossible_result.errors))
             self.assertFalse(impossible_result.split_diagnostics["valid"])
             self.assertEqual(impossible_result.split_diagnostics["strategy"], "group")
             self.assertNotIn("random", str(impossible_result.to_dict()).casefold())
-            combined = agent.ResearchRequest(str(path), "target", "regression", "mae", split_strategy="group", group_column="group", time_column="date")
+            combined = explicit_request(str(path), "target", "regression", "mae", split_strategy="group", group_column="group", time_column="date")
             self.assertEqual(agent.run_research(combined).status, "unsupported")
 
     def test_cli_protocols_negative_cases_and_default(self):
@@ -652,7 +676,28 @@ class ExplicitSplitTests(unittest.TestCase):
 
             def invoke(csv_path, target, *args, label):
                 out = root / label
-                return subprocess.run([sys.executable, str(Path(agent.__file__)), "--csv", str(csv_path),
+                with Path(csv_path).open(encoding='utf-8') as stream:
+                    columns = next(csv.reader(stream))
+                decision_path = root / (label + '.json')
+                decision_path.write_text(json.dumps({
+                    'schema_version': 1,
+                    'configuration': {'observation_structure': 'independent', 'split_strategy': 'group' if '--group-column' in args or '--split-strategy' in args and args[args.index('--split-strategy') + 1] == 'group' else 'time' if '--time-column' in args else 'random'},
+                    'positive_class': 'yes' if 'binary_classification' in args else None,
+                    'row_meaning': 'Caso sintético', 'prediction_scenario': 'Antes del resultado',
+                    'metric_reason': 'Métrica de prueba',
+                    'predictor_availability': {c: 'available' for c in columns if c != target},
+                    'responses': [{'column_name': c, 'decision': 'keep', 'reason': 'Variable previa del escenario sintético', 'column_meaning': f'Entrada sintética {c}'} for c in columns if c != target]
+                }), encoding='utf-8')
+                raw = json.loads(decision_path.read_text(encoding='utf-8'))
+                config = {'csv_path': str(csv_path), 'target': target}
+                for option, field in [('--task', 'task_type'), ('--metric', 'metric'), ('--group-column', 'group_column'), ('--time-column', 'time_column')]:
+                    if option in args:
+                        config[field] = args[args.index(option) + 1]
+                raw['configuration'].update(config)
+                bound = bind_decisions(agent.merge_decisions(agent.ResearchRequest(None, None), raw, set()))
+                raw.update({k: v for k, v in bound.decisions.items() if k in {'review_binding', 'dataset_sha256'}})
+                decision_path.write_text(json.dumps(raw), encoding='utf-8')
+                return subprocess.run([sys.executable, str(Path(agent.__file__)), '--decisions-json', str(decision_path), "--csv", str(csv_path),
                     "--target", target, "--output-dir", str(out), *args], cwd=Path(agent.__file__).parent,
                     capture_output=True, text=True, encoding="utf-8", errors="replace")
 
@@ -704,18 +749,18 @@ class CrossValidationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             path = make_csv(Path(folder) / "data.csv")
             audit, rows = agent.audit_dataset(str(path), "target", "binary_classification")
-            legacy = agent.run_baseline(agent.ResearchRequest(str(path), "target", metric="f1"), audit, rows)
+            legacy = agent.run_baseline(explicit_request(str(path), "target", metric="f1"), audit, rows)
             self.assertEqual(legacy["validation"]["strategy"], "stratified_holdout")
             self.assertIsNone(legacy["validation"]["aggregate"])
-            unknown = agent.run_research(agent.ResearchRequest(str(path), "target", metric="f1",
-                validation_strategy="cross_validation"), retriever=lambda *a, **k: [])
+            unknown = agent.run_research(explicit_request(str(path), "target", metric="f1",
+                validation_strategy="cross_validation", observation_structure="unknown"), retriever=lambda *a, **k: [])
             self.assertEqual(unknown.status, "needs_input")
             self.assertIn("independent", " ".join(unknown.errors))
 
     def test_classification_kfold_stratification_reproducibility_and_report(self):
         with tempfile.TemporaryDirectory() as folder:
             path = make_csv(Path(folder) / "class.csv")
-            request = agent.ResearchRequest(str(path), "target", metric="balanced_accuracy", seed=17,
+            request = explicit_request(str(path), "target", metric="balanced_accuracy", seed=17,
                 validation_strategy="cross_validation", observation_structure="independent")
             first = agent.run_research(request, retriever=lambda *a, **k: [])
             second = agent.run_research(request, retriever=lambda *a, **k: [])
@@ -746,7 +791,7 @@ class CrossValidationTests(unittest.TestCase):
             path = make_regression_csv(Path(folder) / "reg.csv")
             audit, rows = agent.audit_dataset(str(path), "target", "regression")
             for metric in ("mae", "rmse", "r2"):
-                request = agent.ResearchRequest(str(path), "target", "regression", metric, seed=42,
+                request = explicit_request(str(path), "target", "regression", metric, seed=42,
                     validation_strategy="cross_validation", observation_structure="independent")
                 one = agent.run_baseline(request, audit, rows)
                 two = agent.run_baseline(request, audit, rows)
@@ -769,7 +814,7 @@ class CrossValidationTests(unittest.TestCase):
                 writer.writerow(["signal", "target"])
                 writer.writerows([[i, 1 if i == 9 else 0] for i in range(10)])
             audit, rows = agent.audit_dataset(str(rare_target), "target", "regression")
-            request = agent.ResearchRequest(str(rare_target), "target", "regression", "r2",
+            request = explicit_request(str(rare_target), "target", "regression", "r2",
                 validation_strategy="cross_validation", observation_structure="independent", cv_folds=5)
             with self.assertRaisesRegex(ValueError, "R² no está definido en el fold"):
                 agent.run_baseline(request, audit, rows)
@@ -780,7 +825,7 @@ class CrossValidationTests(unittest.TestCase):
                 writer.writerow(["signal", "target"])
                 writer.writerows([[i, "yes" if i < 2 else "no"] for i in range(20)])
             class_audit, class_rows = agent.audit_dataset(str(class_path), "target", "binary_classification")
-            request_class = agent.ResearchRequest(str(class_path), "target", metric="f1",
+            request_class = explicit_request(str(class_path), "target", metric="f1",
                 validation_strategy="cross_validation", observation_structure="independent", cv_folds=5)
             with self.assertRaisesRegex(ValueError, "excede soporte por clase"):
                 agent.run_baseline(request_class, class_audit, class_rows)
@@ -788,14 +833,14 @@ class CrossValidationTests(unittest.TestCase):
     def test_grouped_temporal_and_fit_limit_never_route_to_random_cv(self):
         with tempfile.TemporaryDirectory() as folder:
             path = make_csv(Path(folder) / "data.csv")
-            grouped = agent.ResearchRequest(str(path), "target", metric="f1",
+            grouped = explicit_request(str(path), "target", metric="f1",
                 validation_strategy="cross_validation", observation_structure="grouped",
                 split_strategy="group", group_column="group")
             self.assertTrue(any("CV aleatorio ordinario" in issue for issue in agent.validate_request(grouped)))
-            no_random_holdout = agent.ResearchRequest(str(path), "target", metric="f1",
+            no_random_holdout = explicit_request(str(path), "target", metric="f1",
                 validation_strategy="holdout", observation_structure="grouped")
             self.assertTrue(any("split explícito por grupo" in issue for issue in agent.validate_request(no_random_holdout)))
-            independent = agent.ResearchRequest(str(path), "target", metric="f1", seed=42,
+            independent = explicit_request(str(path), "target", metric="f1", seed=42,
                 validation_strategy="cross_validation", observation_structure="independent", max_cv_fits=3)
             result = agent.run_research(independent, retriever=lambda *a, **k: [])
             self.assertEqual(result.status, "failed")
@@ -804,7 +849,7 @@ class CrossValidationTests(unittest.TestCase):
     def test_auto_is_deterministic_and_reduces_only_with_reason(self):
         with tempfile.TemporaryDirectory() as folder:
             path = make_csv(Path(folder) / "data.csv")
-            request = agent.ResearchRequest(str(path), "target", metric="f1", seed=11,
+            request = explicit_request(str(path), "target", metric="f1", seed=11,
                 validation_strategy="auto", observation_structure="independent", cv_folds=7, max_cv_fits=3)
             audit, rows = agent.audit_dataset(str(path), "target", "binary_classification")
             first = agent.run_baseline(request, audit, rows)
@@ -835,7 +880,7 @@ class ColumnReviewSignalTests(unittest.TestCase):
             self.assertTrue(any(s["column_name"] == "measurement" for s in audit.column_review_signals if s["rule_id"] == "identifier.high_uniqueness"))
             self.assertTrue(any(s["column_name"] == "key" for s in audit.column_review_signals if s["rule_id"] == "identifier.name_token"))
             self.assertFalse(any(s["column_name"] == "key" and s["rule_id"] == "identifier.high_uniqueness" for s in audit.column_review_signals))
-            request = agent.ResearchRequest(str(path), "target", metric="f1")
+            request = explicit_request(str(path), "target", metric="f1")
             before = [c for c in audit.column_names if c != "target"]
             baseline = agent.run_baseline(request, audit, parsed)
             self.assertEqual(baseline["predictor_columns"], before)
@@ -854,7 +899,7 @@ class ColumnReviewSignalTests(unittest.TestCase):
             self.assertEqual(signal["evidence"]["ambiguous_count"], 1)
             self.assertEqual(signal["evidence"]["invalid_count"], 1)
             self.assertEqual(signal["evidence"]["missing_count"], 1)
-            req = agent.ResearchRequest(str(path), "target", metric="f1")
+            req = explicit_request(str(path), "target", metric="f1", positive_class="a")
             self.assertEqual(req.split_strategy, "random")
             self.assertEqual(agent.run_baseline(req, audit, parsed)["split_strategy"], "stratified_holdout")
             explicit, _ = agent.audit_dataset(path, "target", time_format="%d/%m/%Y")
@@ -889,7 +934,7 @@ class ColumnReviewSignalTests(unittest.TestCase):
             rows = [[i, "yes" if i % 2 else "no", "yes" if i % 2 else "no", i % 2, f"category-{i}"] for i in range(40)]
             path = self.write_rows(folder, "proxy.csv", ["signal", "target", "result_code", "numeric_proxy", "unique_category"], rows)
             audit, parsed = agent.audit_dataset(path, "target")
-            request = agent.ResearchRequest(str(path), "target", metric="f1", seed=9)
+            request = explicit_request(str(path), "target", metric="f1", seed=9)
             train, valid, split = agent._split_indices(request, parsed, [r["target"] for r in parsed])
             first = agent._target_relation_signals(parsed, audit.column_names, "target", agent.TASK, train, split["strategy"])
             self.assertTrue(any(s["column_name"] == "result_code" and s["rule_id"] == "target_relation.category_purity" for s in first))
@@ -908,12 +953,12 @@ class ColumnReviewSignalTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             rows = [[f"private-id-{i}", "2024-01-01", i, "yes" if i % 2 else "no"] for i in range(40)]
             path = self.write_rows(folder, "private.csv", ["user_id", "date", "value", "target"], rows)
-            result = agent.run_audit_only(agent.ResearchRequest(str(path), "target", metric="f1"))
+            result = agent.run_audit_only(explicit_request(str(path), "target", metric="f1"))
             self.assertEqual(result.status, "completed")
             self.assertIsNone(result.baseline)
             self.assertFalse(result.dataset_audit["score_computed"])
             with tempfile.TemporaryDirectory() as output:
-                jp, mp = agent.save_result(result, agent.ResearchRequest(str(path), "target", metric="f1"), output)
+                jp, mp = agent.save_result(result, explicit_request(str(path), "target", metric="f1"), output)
                 payload = json.loads(jp.read_text(encoding="utf-8"))
                 report = mp.read_text(encoding="utf-8")
                 signals = payload["result"]["dataset_audit"]["column_review_signals"]

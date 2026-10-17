@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import argparse
 import random
 from pathlib import Path
 
@@ -13,9 +14,9 @@ OUTPUT = Path(__file__).resolve().parents[1] / "demo_ventas_sinteticas.csv"
 CHANNEL_EFFECT = {"email": 2.0, "redes": 5.0, "tienda": 8.0}
 
 
-def generate() -> None:
+def generate(output: Path = OUTPUT) -> None:
     rng = random.Random(SEED)
-    with OUTPUT.open("w", encoding="utf-8", newline="") as handle:
+    with output.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle, lineterminator="\n")
         writer.writerow(("horas_promocion", "experiencia_equipo", "presupuesto_estimado", "canal", "ventas"))
         for _ in range(ROWS):
@@ -33,5 +34,8 @@ def generate() -> None:
 
 
 if __name__ == "__main__":
-    generate()
-    print(f"Generado: {OUTPUT} ({ROWS} filas; semilla {SEED})")
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output", type=Path, default=OUTPUT)
+    args = parser.parse_args()
+    generate(args.output)
+    print(f"Generado: {args.output} ({ROWS} filas; semilla {SEED})")

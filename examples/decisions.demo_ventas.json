@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "configuration": {
+    "csv_path": "demo_ventas_sinteticas.csv",
+    "target": "ventas",
+    "task_type": "regression",
+    "metric": "rmse",
+    "context": null,
+    "metric_context": "large_errors_cost_more",
+    "target_unit": "unidades_simuladas",
+    "split_strategy": "random",
+    "group_column": null,
+    "time_column": null,
+    "time_format": null,
+    "validation_strategy": "cross_validation",
+    "observation_structure": "independent",
+    "seed": 42,
+    "cv_folds": 5,
+    "max_cv_fits": null,
+    "test_size": 0.2
+  },
+  "dataset_sha256": "43d55690830f8958216117a919f400b12bfa5e6b94e03557ce38de641640ea50",
+  "review_binding": {
+    "dataset_sha256": "43d55690830f8958216117a919f400b12bfa5e6b94e03557ce38de641640ea50",
+    "configuration_sha256": "ba128c9adeaf7377b03397ec90169ace7c1fd58fee68e0a3d245ddeb5688bc14",
+    "signals_sha256": "46ad9e3e66893555f23195941e90e7381e98d771a6269035c0f46922a0c85336"
+  },
+  "positive_class": null,
+  "row_meaning": "CONFIGURACIÓN DE DEMOSTRACIÓN fundamentada en scripts/generate_demo_ventas.py y DATASET_DEMO.md; no es aprobación humana. Una acción promocional sintética independiente.",
+  "prediction_scenario": "Planificación de una acción simulada, antes de calcular ventas; se observan los predictores exportados, con las celdas ocultas como faltantes.",
+  "metric_reason": "Objetivo de esta demostración: penalizar más los errores grandes en unidades vendidas simuladas; RMSE conserva esas unidades. Es una elección ilustrativa, no un coste empresarial validado ni una exigencia del generador.",
+  "excluded_columns": {},
+  "predictor_availability": {
+    "horas_promocion": "available",
+    "experiencia_equipo": "available",
+    "presupuesto_estimado": "available",
+    "canal": "available"
+  },
+  "responses": [
+    {
+      "column_name": "presupuesto_estimado",
+      "signal_id": "signal-v1-936c9a9069cb14923486b47ddd6c81688edf207aa343943b6759441a8aa36d26",
+      "rule_id": "outlier.tukey_1_5_iqr",
+      "decision": "keep",
+      "reason": "El generador crea presupuestos excepcionales antes del objetivo, no son errores ni fuga confirmada. Su cardinalidad refleja importes numéricos legítimos. Faltantes aleatorios imputados solo con train.",
+      "column_meaning": "Presupuesto previsto: base 80..400 e incremento excepcional independiente, ambos antes de ventas. El 4% de ocultación es aleatorio."
+    },
+    {
+      "column_name": "presupuesto_estimado",
+      "signal_id": "signal-v1-74f96e9f67bab83f857c392d834c6c01d639368dafb4ab40f28f624163a5b2a3",
+      "rule_id": "category.high_cardinality",
+      "decision": "keep",
+      "reason": "El generador crea presupuestos excepcionales antes del objetivo, no son errores ni fuga confirmada. Su cardinalidad refleja importes numéricos legítimos. Faltantes aleatorios imputados solo con train.",
+      "column_meaning": "Presupuesto previsto: base 80..400 e incremento excepcional independiente, ambos antes de ventas. El 4% de ocultación es aleatorio."
+    },
+    {
+      "column_name": "experiencia_equipo",
+      "decision": "keep",
+      "reason": "Entrada previa del simulador; disponibilidad de la variable no significa ausencia de celdas faltantes. Se permite imputación ajustada solo en train.",
+      "column_meaning": "Años simulados conocidos al planificar; rng.randint(0,12). El 6% de ocultación no depende del target."
+    },
+    {
+      "column_name": "horas_promocion",
+      "decision": "keep",
+      "reason": "Entrada del simulador y duración disponible al planificar, no derivada de ventas.",
+      "column_meaning": "Duración planificada; rng.randint(3,18), antes de calcular ventas."
+    },
+    {
+      "column_name": "canal",
+      "decision": "keep",
+      "reason": "Decisión de canal previa a la predicción; su efecto entra después en la fórmula del objetivo.",
+      "column_meaning": "Medio planificado email/redes/tienda, elegido antes de ventas."
+    }
+  ]
+}

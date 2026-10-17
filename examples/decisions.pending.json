@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "configuration": {
+    "csv_path": null,
+    "target": null,
+    "task_type": null,
+    "metric": null,
+    "observation_structure": "unknown",
+    "split_strategy": null
+  },
+  "dataset_sha256": null,
+  "positive_class": null,
+  "row_meaning": null,
+  "prediction_scenario": null,
+  "metric_reason": null,
+  "predictor_availability": {},
+  "excluded_columns": {},
+  "responses": []
+}
